@@ -4,6 +4,8 @@ import axios from 'axios'
 
 function App() {
 
+  console.log("API URL =", import.meta.env.VITE_API_URL)
+
   const plotRef = useRef(null)
 
   const [loading, setLoading] = useState(true)
