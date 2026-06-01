@@ -13,7 +13,7 @@ function App() {
   useEffect(() => {
 
     axios
-      .get(`${import.meta.env.VITE_API_URL}/dwelling-time`)
+      .get('https://gigafactory-platform-1.onrender.com/dwelling-time')
       .then((response) => {
 
         Plotly.newPlot(
@@ -31,17 +31,17 @@ function App() {
             }
           ],
           {
-            title: 'Dwelling Time vs Solid Content',
-            width: 900,
-            height: 500,
-            xaxis: {
-              title: 'Solid Content (w%)'
-            },
-            yaxis: {
-              title: 'Dwelling Time (minutes)'
-            }
-          }
+  title: 'Dwelling Time vs Solid Content',
+  autosize: true,
+  xaxis: {
+    title: 'Solid Content (w%)'
+  },
+  yaxis: {
+    title: 'Dwelling Time (minutes)'
+  }
+}
         )
+window.dispatchEvent(new Event('resize'))
 
         setLoading(false)
 
@@ -63,7 +63,13 @@ function App() {
 
       {loading && <p>Loading graph...</p>}
 
-      <div ref={plotRef}></div>
+      <div
+  ref={plotRef}
+  style={{
+    width: '100%',
+    height: '600px'
+  }}
+></div>
 
     </div>
   )
