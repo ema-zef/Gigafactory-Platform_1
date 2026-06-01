@@ -7,7 +7,6 @@ function App() {
   console.log("API URL =", import.meta.env.VITE_API_URL)
 
   const plotRef = useRef(null)
-
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -31,19 +30,27 @@ function App() {
             }
           ],
           {
-  title: 'Dwelling Time vs Solid Content',
-  autosize: true,
-  xaxis: {
-    title: 'Solid Content (w%)'
-  },
-  yaxis: {
-    title: 'Dwelling Time (minutes)'
-  }
-}
+            title: 'Dwelling Time vs Solid Content',
+            autosize: true,
+            xaxis: {
+              title: 'Solid Content (w%)'
+            },
+            yaxis: {
+              title: 'Dwelling Time (minutes)'
+            }
+          },
+          {
+            responsive: true
+          }
         )
-window.dispatchEvent(new Event('resize'))
 
         setLoading(false)
+
+        setTimeout(() => {
+          if (plotRef.current) {
+            Plotly.Plots.resize(plotRef.current)
+          }
+        }, 500)
 
       })
       .catch((error) => {
@@ -64,12 +71,13 @@ window.dispatchEvent(new Event('resize'))
       {loading && <p>Loading graph...</p>}
 
       <div
-  ref={plotRef}
-  style={{
-    width: '100%',
-    height: '600px'
-  }}
-></div>
+        ref={plotRef}
+        style={{
+          width: '100%',
+          height: '600px',
+          minHeight: '600px'
+        }}
+      />
 
     </div>
   )
