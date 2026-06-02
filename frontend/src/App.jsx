@@ -25,7 +25,7 @@ function App() {
     )
 
     axios
-      .get('https://gigafactory-platform-1.onrender.com/dwelling-time')
+      .get(`${import.meta.env.VITE_API_URL}/dwelling-time`)
       .then((response) => {
 
         console.log("Response received:", response.data)
