@@ -1,14 +1,16 @@
-import { useEffect, useRef, useState } from 'react'
-import Plotly from 'plotly.js-dist-min'
+import { useEffect, useState } from 'react'
+import Plot from 'react-plotly.js'
 import axios from 'axios'
 
 function App() {
 
-  const plotRef = useRef(null)
-
   const [loading, setLoading] = useState(true)
+  const [plotData, setPlotData] = useState(null)
+  const [error, setError] = useState(null)
 
   useEffect(() => {
+
+    let mounted = true
 
     console.log(
       "Fetching from:",
@@ -19,23 +21,66 @@ function App() {
       .get('https://gigafactory-platform-1.onrender.com/dwelling-time')
       .then((response) => {
 
+        if (!mounted) return
+
         console.log("Response received:", response.data)
 
-        Plotly.newPlot(
-          plotRef.current,
-          [
-            {
-              x: response.data.x,
-              y: response.data.y,
-              type: 'scatter',
-              mode: 'lines',
-              line: {
-                color: 'blue',
-                width: 3
-              }
-            }
-          ],
+        setPlotData([
           {
+            x: response.data.x,
+            y: response.data.y,
+            type: 'scatter',
+            mode: 'lines',
+            line: {
+              color: 'blue',
+              width: 3
+            }
+          }
+        ])
+
+        setLoading(false)
+
+      })
+      .catch((error) => {
+
+        console.error("Backend error:", error)
+
+        if (!mounted) return
+
+        setError('Backend connection failed')
+        setLoading(false)
+
+      })
+
+    return () => {
+      mounted = false
+    }
+
+  }, [])
+
+  return (
+    <div
+      style={{
+        padding: '40px',
+        width: '100%',
+        maxWidth: '1200px',
+        margin: '0 auto'
+      }}
+    >
+      <h1>Scientific Dashboard</h1>
+
+      {loading && <p>Loading graph...</p>}
+
+      {error && (
+        <p style={{ color: 'red' }}>
+          {error}
+        </p>
+      )}
+
+      {!loading && plotData && (
+        <Plot
+          data={plotData}
+          layout={{
             title: 'Dwelling Time vs Solid Content',
             autosize: true,
             xaxis: {
@@ -50,60 +95,19 @@ function App() {
               t: 60,
               b: 80
             }
-          },
-          {
+          }}
+          config={{
             responsive: true
-          }
-        ).then(() => {
-
-          Plotly.Plots.resize(plotRef.current)
-
-          console.log("Plot rendered successfully")
-
-          setLoading(false)
-
-        })
-
-      })
-      .catch((error) => {
-
-        console.error("Backend error:", error)
-
-        setLoading(false)
-
-        alert('Backend connection failed')
-
-      })
-
-  }, [])
-
-  return (
-    <div
-      style={{
-        padding: '40px',
-        width: '100%',
-        maxWidth: '1200px',
-        margin: '0 auto'
-      }}
-    >
-
-      <h1>Scientific Dashboard</h1>
-
-      {loading && <p>Loading graph...</p>}
-
-      <p>Graph container below:</p>
-
-      <div
-        ref={plotRef}
-        style={{
-          width: '100%',
-          height: '700px',
-          minHeight: '700px',
-          border: '1px solid #cccccc',
-          backgroundColor: '#ffffff'
-        }}
-      />
-
+          }}
+          useResizeHandler={true}
+          style={{
+            width: '100%',
+            height: '700px',
+            border: '1px solid #cccccc',
+            backgroundColor: '#ffffff'
+          }}
+        />
+      )}
     </div>
   )
 }
