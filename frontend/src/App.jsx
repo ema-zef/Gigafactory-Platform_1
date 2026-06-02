@@ -4,18 +4,17 @@ import axios from 'axios'
 
 function App() {
 
-  alert("NEW BUILD TEST")
-
-  console.log(
-    "Fetching from:",
-    "https://gigafactory-platform-1.onrender.com/dwelling-time"
-  )
-
   const plotRef = useRef(null)
 
   const [loading, setLoading] = useState(true)
+  const [backendStatus, setBackendStatus] = useState('Checking...')
 
   useEffect(() => {
+
+    console.log(
+      "Fetching from:",
+      "https://gigafactory-platform-1.onrender.com/dwelling-time"
+    )
 
     axios
       .get('https://gigafactory-platform-1.onrender.com/dwelling-time')
@@ -23,7 +22,9 @@ function App() {
 
         console.log("Response received:", response.data)
 
-        Plotly.newPlot(
+        setBackendStatus('Connected')
+
+        return Plotly.newPlot(
           plotRef.current,
           [
             {
@@ -33,18 +34,49 @@ function App() {
               mode: 'lines',
               line: {
                 color: 'blue',
-                width: 3
+                width: 4
               }
             }
           ],
           {
-            title: 'Dwelling Time vs Solid Content',
-            autosize: true,
-            xaxis: {
-              title: 'Solid Content (w%)'
+            title: {
+              text: 'Dwelling Time vs Solid Content',
+              font: {
+                size: 28
+              }
             },
+
+            autosize: true,
+
+            xaxis: {
+              title: {
+                text: 'Solid Content (w%)',
+                font: {
+                  size: 20
+                }
+              },
+              tickfont: {
+                size: 16
+              }
+            },
+
             yaxis: {
-              title: 'Dwelling Time (minutes)'
+              title: {
+                text: 'Dwelling Time (minutes)',
+                font: {
+                  size: 20
+                }
+              },
+              tickfont: {
+                size: 16
+              }
+            },
+
+            margin: {
+              l: 90,
+              r: 40,
+              t: 80,
+              b: 90
             }
           },
           {
@@ -52,7 +84,12 @@ function App() {
           }
         )
 
-        window.dispatchEvent(new Event('resize'))
+      })
+      .then(() => {
+
+        Plotly.Plots.resize(plotRef.current)
+
+        console.log("Plot rendered successfully")
 
         setLoading(false)
 
@@ -61,16 +98,28 @@ function App() {
 
         console.error("Backend error:", error)
 
-        alert('Backend connection failed')
+        setBackendStatus('Disconnected')
+
+        setLoading(false)
 
       })
 
   }, [])
 
   return (
-    <div style={{ padding: '40px' }}>
+    <div
+      style={{
+        padding: '40px',
+        maxWidth: '1200px',
+        margin: '0 auto'
+      }}
+    >
 
       <h1>Scientific Dashboard</h1>
+
+      <p>
+        Backend Status: <strong>{backendStatus}</strong>
+      </p>
 
       {loading && <p>Loading graph...</p>}
 
@@ -78,8 +127,10 @@ function App() {
         ref={plotRef}
         style={{
           width: '100%',
-          height: '600px',
-          minHeight: '600px'
+          height: '700px',
+          minHeight: '700px',
+          border: '1px solid #cccccc',
+          backgroundColor: '#ffffff'
         }}
       />
 
