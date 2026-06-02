@@ -11,6 +11,14 @@ function App() {
 
   useEffect(() => {
 
+    const handleResize = () => {
+      if (plotRef.current) {
+        Plotly.Plots.resize(plotRef.current)
+      }
+    }
+
+    window.addEventListener('resize', handleResize)
+
     console.log(
       "Fetching from:",
       "https://gigafactory-platform-1.onrender.com/dwelling-time"
@@ -83,15 +91,26 @@ function App() {
             responsive: true
           }
         )
-
       })
       .then(() => {
-
-        Plotly.Plots.resize(plotRef.current)
 
         console.log("Plot rendered successfully")
 
         setLoading(false)
+
+        requestAnimationFrame(() => {
+          if (plotRef.current) {
+            Plotly.Plots.resize(plotRef.current)
+            console.log("Plot resized")
+          }
+        })
+
+        setTimeout(() => {
+          if (plotRef.current) {
+            Plotly.Plots.resize(plotRef.current)
+            console.log("Delayed resize completed")
+          }
+        }, 300)
 
       })
       .catch((error) => {
@@ -103,6 +122,10 @@ function App() {
         setLoading(false)
 
       })
+
+    return () => {
+      window.removeEventListener('resize', handleResize)
+    }
 
   }, [])
 
