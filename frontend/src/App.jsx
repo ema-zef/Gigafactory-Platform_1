@@ -1,3 +1,10 @@
+function App() {
+
+  alert("NEW BUILD TEST")
+
+  const plotRef = useRef(null)
+  ...
+}
 import { useEffect, useRef, useState } from 'react'
 import Plotly from 'plotly.js-dist-min'
 import axios from 'axios'
