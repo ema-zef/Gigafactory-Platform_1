@@ -4,79 +4,45 @@ import axios from 'axios'
 
 function App() {
 
+  console.log(
+    "Fetching from:",
+    "https://gigafactory-platform-1.onrender.com/dwelling-time"
+  )
+
   const plotRef = useRef(null)
+
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-
-    console.log("App mounted")
-
-    console.log(
-      "Fetching from:",
-      "https://gigafactory-platform-1.onrender.com/dwelling-time"
-    )
 
     axios
       .get('https://gigafactory-platform-1.onrender.com/dwelling-time')
       .then((response) => {
 
-        alert("Backend returned data")
-
         console.log("Response received:", response.data)
-        console.log("Plotly object:", Plotly)
-        console.log("Plot ref:", plotRef.current)
-        console.log("About to render plot")
 
-        return Plotly.newPlot(
+        Plotly.newPlot(
           plotRef.current,
           [
             {
               x: response.data.x,
               y: response.data.y,
               type: 'scatter',
-              mode: 'markers+lines',
-              marker: {
-                size: 10
-              },
+              mode: 'lines',
               line: {
                 color: 'blue',
-                width: 5
+                width: 3
               }
             }
           ],
           {
-            title: {
-              text: 'Dwelling Time vs Solid Content',
-              font: {
-                size: 28
-              }
-            },
-
+            title: 'Dwelling Time vs Solid Content',
             autosize: true,
-
             xaxis: {
-              title: {
-                text: 'Solid Content (w%)',
-                font: {
-                  size: 22
-                }
-              }
+              title: 'Solid Content (w%)'
             },
-
             yaxis: {
-              title: {
-                text: 'Dwelling Time (minutes)',
-                font: {
-                  size: 22
-                }
-              }
-            },
-
-            margin: {
-              l: 80,
-              r: 40,
-              t: 80,
-              b: 80
+              title: 'Dwelling Time (minutes)'
             }
           },
           {
@@ -84,14 +50,7 @@ function App() {
           }
         )
 
-      })
-      .then(() => {
-
-        alert("Plot rendered successfully")
-
-        Plotly.Plots.resize(plotRef.current)
-
-        console.log("Plot rendered successfully")
+        window.dispatchEvent(new Event('resize'))
 
         setLoading(false)
 
@@ -100,26 +59,15 @@ function App() {
 
         console.error("Backend error:", error)
 
-        alert(
-          "ERROR:\n\n" +
-          JSON.stringify(error?.message || error, null, 2)
-        )
-
-        setLoading(false)
+        alert('Backend connection failed')
 
       })
 
   }, [])
 
   return (
-    <div
-      style={{
-        padding: '40px',
-        width: '100%',
-        maxWidth: '1200px',
-        margin: '0 auto'
-      }}
-    >
+    <div style={{ padding: '40px' }}>
+
       <h1>Scientific Dashboard</h1>
 
       {loading && <p>Loading graph...</p>}
@@ -128,10 +76,11 @@ function App() {
         ref={plotRef}
         style={{
           width: '100%',
-          height: '700px',
-          border: '1px solid #ccc'
+          height: '600px',
+          minHeight: '600px'
         }}
       />
+
     </div>
   )
 }
