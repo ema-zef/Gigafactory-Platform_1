@@ -1,6 +1,8 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from jose import jwt
+from sqlalchemy import create_engine, text
+import os
 import numpy as np
 
 from models import LoginRequest
@@ -17,9 +19,28 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# ----------------------------------
+# Neon PostgreSQL connection
+# ----------------------------------
+
+DATABASE_URL = os.getenv("DATABASE_URL")
+
+engine = None
+
+if DATABASE_URL:
+    engine = create_engine(DATABASE_URL)
+
+# ----------------------------------
+# Demo users
+# ----------------------------------
+
 users = {
     "admin": "password123"
 }
+
+# ----------------------------------
+# Login
+# ----------------------------------
 
 @app.post("/login")
 def login(credentials: LoginRequest):
@@ -44,6 +65,9 @@ def login(credentials: LoginRequest):
 
     return {"token": token}
 
+# ----------------------------------
+# Existing plot endpoint
+# ----------------------------------
 
 @app.get("/dwelling-time")
 def get_dwelling_time():
@@ -56,3 +80,38 @@ def get_dwelling_time():
         "x": solid_content.tolist(),
         "y": dwelling_time.tolist()
     }
+
+# ----------------------------------
+# Neon connection test
+# ----------------------------------
+
+@app.get("/db-test")
+def db_test():
+
+    if engine is None:
+        raise HTTPException(
+            status_code=500,
+            detail="DATABASE_URL not configured"
+        )
+
+    try:
+
+        with engine.connect() as conn:
+
+            result = conn.execute(
+                text("SELECT NOW();")
+            )
+
+            current_time = result.scalar()
+
+            return {
+                "status": "connected",
+                "database_time": str(current_time)
+            }
+
+    except Exception as e:
+
+        raise HTTPException(
+            status_code=500,
+            detail=str(e)
+        )
