@@ -38,3 +38,5 @@ typing-inspection==0.4.2
 typing_extensions==4.15.0
 tzdata==2026.2
 uvicorn==0.48.0
+sqlalchemy==2.0.43
+psycopg2-binary==2.9.10
