@@ -9,7 +9,7 @@ from models import LoginRequest
 
 SECRET_KEY = "gigafactory-secret-key-change-me"
 
-app = FastAPI(
+app = FastAPI(print("***** LOADED MAIN.PY WITH VERSION ENDPOINT *****")
     title="Gigafactory Platform API",
     version="1.0.0"
 )
