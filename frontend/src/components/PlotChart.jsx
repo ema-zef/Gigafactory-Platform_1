@@ -158,8 +158,8 @@ function PlotChart({ endpoint, title, xLabel, yLabel, setBackendStatus }) {
         ref={plotRef}
         style={{
           width: '100%',
-          height: '700px',
-          minHeight: '700px',
+          height: '450px',
+          minHeight: '450px',
           border: '1px solid #cccccc',
           backgroundColor: '#ffffff'
         }}
