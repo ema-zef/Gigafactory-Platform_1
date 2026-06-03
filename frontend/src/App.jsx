@@ -34,12 +34,20 @@ function App() {
       </p>
 
       <PlotChart
-        endpoint="/dwelling-time"
-        title="Dwelling Time vs Solid Content"
-        xLabel="Solid Content (w%)"
-        yLabel="Dwelling Time (minutes)"
-        setBackendStatus={setBackendStatus}
-      />
+  endpoint="/dwelling-time"
+  title="Dwelling Time vs Solid Content"
+  xLabel="Solid Content (w%)"
+  yLabel="Dwelling Time (minutes)"
+  setBackendStatus={setBackendStatus}
+/>
+
+<PlotChart
+  endpoint="/dwelling-time"
+  title="Dwelling Time vs Electrode Thickness"
+  xLabel="X"
+  yLabel="Y"
+  setBackendStatus={setBackendStatus}
+/>
 
     </div>
   )
