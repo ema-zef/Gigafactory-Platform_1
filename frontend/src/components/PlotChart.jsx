@@ -5,6 +5,7 @@ import axios from 'axios'
 function PlotChart({ endpoint, title, xLabel, yLabel, setBackendStatus }) {
 
   const plotRef = useRef(null)
+
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -21,9 +22,11 @@ function PlotChart({ endpoint, title, xLabel, yLabel, setBackendStatus }) {
       .get(`${import.meta.env.VITE_API_URL}${endpoint}`)
       .then((response) => {
 
+        console.log('Response received:', response.data)
+
         setBackendStatus('Connected')
 
-        return Plotly.newPlot(
+        Plotly.newPlot(
           plotRef.current,
           [
             {
@@ -82,40 +85,44 @@ function PlotChart({ endpoint, title, xLabel, yLabel, setBackendStatus }) {
             responsive: true
           }
         )
-      })
-      .then(() => {
-console.log('Setting loading to false')
+        .then(() => {
 
-        setLoading(false)
+          console.log('Plot finished rendering')
 
-requestAnimationFrame(() => {
-  if (plotRef.current) {
-    Plotly.Plots.resize(plotRef.current)
-  }
-})
+          console.log('Setting loading to false')
 
-setTimeout(() => {
-  if (plotRef.current) {
-    Plotly.Plots.resize(plotRef.current)
-  }
-}, 500)
+          setLoading(false)
 
-setTimeout(() => {
-  if (plotRef.current) {
-    Plotly.Plots.resize(plotRef.current)
-  }
-}, 1500)
+          requestAnimationFrame(() => {
+            if (plotRef.current) {
+              Plotly.Plots.resize(plotRef.current)
+            }
+          })
 
-        setTimeout(() => {
-          if (plotRef.current) {
-            Plotly.Plots.resize(plotRef.current)
-          }
-        }, 300)
+          setTimeout(() => {
+            if (plotRef.current) {
+              Plotly.Plots.resize(plotRef.current)
+            }
+          }, 300)
+
+          setTimeout(() => {
+            if (plotRef.current) {
+              Plotly.Plots.resize(plotRef.current)
+            }
+          }, 500)
+
+          setTimeout(() => {
+            if (plotRef.current) {
+              Plotly.Plots.resize(plotRef.current)
+            }
+          }, 1500)
+
+        })
 
       })
       .catch((error) => {
 
-        console.error(error)
+        console.error('Backend error:', error)
 
         setBackendStatus('Disconnected')
 
@@ -137,17 +144,15 @@ setTimeout(() => {
 
   return (
     <>
-      {loading && (
-        <div
-          style={{
-            textAlign: 'center',
-            padding: '20px',
-            fontSize: '18px'
-          }}
-        >
-          ⏳ Loading graph...
-        </div>
-      )}
+      <p
+        style={{
+          textAlign: 'center',
+          fontWeight: 'bold',
+          marginBottom: '10px'
+        }}
+      >
+        {loading ? 'Loading...' : 'Graph loaded'}
+      </p>
 
       <div
         ref={plotRef}
