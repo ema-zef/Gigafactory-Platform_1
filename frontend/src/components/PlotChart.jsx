@@ -84,14 +84,27 @@ function PlotChart({ endpoint, title, xLabel, yLabel, setBackendStatus }) {
         )
       })
       .then(() => {
+console.log('Setting loading to false')
 
         setLoading(false)
 
-        requestAnimationFrame(() => {
-          if (plotRef.current) {
-            Plotly.Plots.resize(plotRef.current)
-          }
-        })
+requestAnimationFrame(() => {
+  if (plotRef.current) {
+    Plotly.Plots.resize(plotRef.current)
+  }
+})
+
+setTimeout(() => {
+  if (plotRef.current) {
+    Plotly.Plots.resize(plotRef.current)
+  }
+}, 500)
+
+setTimeout(() => {
+  if (plotRef.current) {
+    Plotly.Plots.resize(plotRef.current)
+  }
+}, 1500)
 
         setTimeout(() => {
           if (plotRef.current) {
