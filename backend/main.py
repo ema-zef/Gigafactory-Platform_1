@@ -9,7 +9,10 @@ from models import LoginRequest
 
 SECRET_KEY = "gigafactory-secret-key-change-me"
 
-app = FastAPI()
+app = FastAPI(
+    title="Gigafactory Platform API",
+    version="1.0.0"
+)
 
 app.add_middleware(
     CORSMiddleware,
@@ -39,6 +42,40 @@ users = {
 }
 
 # ----------------------------------
+# Root endpoint
+# ----------------------------------
+
+@app.get("/")
+def home():
+
+    return {
+        "message": "Gigafactory Platform Backend Running",
+        "database_configured": engine is not None
+    }
+
+# ----------------------------------
+# Health check
+# ----------------------------------
+
+@app.get("/health")
+def health():
+
+    return {
+        "status": "healthy"
+    }
+
+# ----------------------------------
+# Version check
+# ----------------------------------
+
+@app.get("/version")
+def version():
+
+    return {
+        "version": "render-test-2026-06-03"
+    }
+
+# ----------------------------------
 # Login
 # ----------------------------------
 
@@ -63,7 +100,9 @@ def login(credentials: LoginRequest):
         algorithm="HS256"
     )
 
-    return {"token": token}
+    return {
+        "token": token
+    }
 
 # ----------------------------------
 # Existing plot endpoint
