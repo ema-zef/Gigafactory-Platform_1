@@ -9,10 +9,9 @@ from models import LoginRequest
 
 SECRET_KEY = "gigafactory-secret-key-change-me"
 
-app = FastAPI(print("***** LOADED MAIN.PY WITH VERSION ENDPOINT *****")
-    title="Gigafactory Platform API",
-    version="1.0.0"
-)
+print("***** LOADED MAIN.PY WITH VERSION ENDPOINT *****")
+
+app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
@@ -21,7 +20,14 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+from fastapi import FastAPI, HTTPException
 
+print("====================================")
+print("MAIN.PY LOADED")
+print("VERSION 2025-06-04-01")
+print("====================================")
+
+from fastapi.middleware.cors import CORSMiddleware
 # ----------------------------------
 # Neon PostgreSQL connection
 # ----------------------------------
