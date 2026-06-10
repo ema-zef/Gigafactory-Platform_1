@@ -4,7 +4,24 @@ from jose import jwt
 from sqlalchemy import create_engine, text
 import os
 import numpy as np
+import requests
 
+@app.get("/fuseki-test")
+def fuseki_test():
+
+    query = """
+    SELECT * WHERE {
+        ?s ?p ?o
+    }
+    LIMIT 10
+    """
+
+    response = requests.post(
+        "https://gigafactory-fuseki.onrender.com/gigafactory/query",
+        data={"query": query}
+    )
+
+    return response.json()
 from models import LoginRequest
 
 SECRET_KEY = "gigafactory-secret-key-change-me"
@@ -131,6 +148,40 @@ def get_dwelling_time():
 # ----------------------------------
 
 @app.get("/db-test")
+# ----------------------------------
+# Fuseki connection test
+# ----------------------------------
+
+@app.get("/fuseki-test")
+def fuseki_test():
+
+    query = """
+    SELECT * WHERE {
+        ?s ?p ?o
+    }
+    LIMIT 10
+    """
+
+    try:
+
+        response = requests.post(
+            "https://gigafactory-fuseki.onrender.com/gigafactory/query",
+            data={"query": query},
+            timeout=30
+        )
+
+        return {
+            "status": "connected",
+            "response": response.text
+        }
+
+    except Exception as e:
+
+        raise HTTPException(
+            status_code=500,
+            detail=str(e)
+        )
+
 def db_test():
 
     if engine is None:
