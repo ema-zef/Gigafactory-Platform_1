@@ -1,3 +1,8 @@
+@app.get("/render-debug")
+def render_debug():
+    return {
+        "deployment": "fuseki-version-loaded"
+    }
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from jose import jwt
