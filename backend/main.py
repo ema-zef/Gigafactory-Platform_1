@@ -6,29 +6,33 @@ import os
 import numpy as np
 import requests
 
-@app.get("/fuseki-test")
-def fuseki_test():
-
-    query = """
-    SELECT * WHERE {
-        ?s ?p ?o
-    }
-    LIMIT 10
-    """
-
-    response = requests.post(
-        "https://gigafactory-fuseki.onrender.com/gigafactory/query",
-        data={"query": query}
-    )
-
-    return response.json()
 from models import LoginRequest
+
+# ----------------------------------
+# App
+# ----------------------------------
+
+app = FastAPI()
+
+# ----------------------------------
+# Deployment verification
+# ----------------------------------
+
+@app.get("/version")
+def version():
+    return {
+        "version": "render-test-2026-06-03"
+    }
+
+# ----------------------------------
+# Security
+# ----------------------------------
 
 SECRET_KEY = "gigafactory-secret-key-change-me"
 
-print("***** LOADED MAIN.PY WITH VERSION ENDPOINT *****")
-
-app = FastAPI()
+# ----------------------------------
+# CORS
+# ----------------------------------
 
 app.add_middleware(
     CORSMiddleware,
@@ -37,14 +41,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-from fastapi import FastAPI, HTTPException
 
-print("====================================")
-print("MAIN.PY LOADED")
-print("VERSION 2025-06-04-01")
-print("====================================")
-
-from fastapi.middleware.cors import CORSMiddleware
 # ----------------------------------
 # Neon PostgreSQL connection
 # ----------------------------------
@@ -63,40 +60,6 @@ if DATABASE_URL:
 users = {
     "admin": "password123"
 }
-
-# ----------------------------------
-# Root endpoint
-# ----------------------------------
-
-@app.get("/")
-def home():
-
-    return {
-        "message": "Gigafactory Platform Backend Running",
-        "database_configured": engine is not None
-    }
-
-# ----------------------------------
-# Health check
-# ----------------------------------
-
-@app.get("/health")
-def health():
-
-    return {
-        "status": "healthy"
-    }
-
-# ----------------------------------
-# Version check
-# ----------------------------------
-
-@app.get("/version")
-def version():
-
-    return {
-        "version": "render-test-2026-06-03"
-    }
 
 # ----------------------------------
 # Login
@@ -144,44 +107,10 @@ def get_dwelling_time():
     }
 
 # ----------------------------------
-# Neon connection test
+# PostgreSQL test
 # ----------------------------------
 
 @app.get("/db-test")
-# ----------------------------------
-# Fuseki connection test
-# ----------------------------------
-
-@app.get("/fuseki-test")
-def fuseki_test():
-
-    query = """
-    SELECT * WHERE {
-        ?s ?p ?o
-    }
-    LIMIT 10
-    """
-
-    try:
-
-        response = requests.post(
-            "https://gigafactory-fuseki.onrender.com/gigafactory/query",
-            data={"query": query},
-            timeout=30
-        )
-
-        return {
-            "status": "connected",
-            "response": response.text
-        }
-
-    except Exception as e:
-
-        raise HTTPException(
-            status_code=500,
-            detail=str(e)
-        )
-
 def db_test():
 
     if engine is None:
@@ -211,3 +140,53 @@ def db_test():
             status_code=500,
             detail=str(e)
         )
+
+# ----------------------------------
+# Fuseki test
+# ----------------------------------
+
+@app.get("/fuseki-test")
+def fuseki_test():
+
+    query = """
+    SELECT ?s ?p ?o
+    WHERE {
+        ?s ?p ?o
+    }
+    LIMIT 10
+    """
+
+    try:
+
+        response = requests.post(
+            "https://gigafactory-fuseki.onrender.com/gigafactory/query",
+            data={"query": query},
+            headers={
+                "Accept": "application/sparql-results+json"
+            },
+            timeout=30
+        )
+
+        return {
+            "status_code": response.status_code,
+            "response": response.json()
+        }
+
+    except Exception as e:
+
+        raise HTTPException(
+            status_code=500,
+            detail=str(e)
+        )
+
+# ----------------------------------
+# Root endpoint
+# ----------------------------------
+
+@app.get("/")
+def root():
+
+    return {
+        "message": "Gigafactory Platform Backend Running",
+        "version": "render-test-2026-06-03"
+    }
