@@ -38,6 +38,11 @@ def render_debug():
     return {
         "deployment": "fuseki-version-loaded"
     }
+@app.get("/deployment-id")
+def deployment_id():
+    return {
+        "deployment": "2026-06-10-debug-01"
+    }
 # ----------------------------------
 # Fuseki debug
 # ----------------------------------
