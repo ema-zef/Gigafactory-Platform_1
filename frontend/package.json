@@ -15,7 +15,8 @@
     "plotly.js-dist-min": "^3.5.1",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
-    "react-plotly.js": "^2.6.0"
+    "react-plotly.js": "^2.6.0",
+    "reactflow": "^11.11.4"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
