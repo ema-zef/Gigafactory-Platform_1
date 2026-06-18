@@ -1,10 +1,4 @@
-@app.get("/render-debug")
-def render_debug():
-    return {
-        "deployment": "fuseki-version-loaded"
-    }
 from models.equipment import EquipmentCreate
-from sqlalchemy import create_engine
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from jose import jwt
@@ -39,6 +33,11 @@ def version():
 def render_debug():
     return {
         "deployment": "fuseki-version-loaded"
+    }
+@app.get("/deployment-id")
+def deployment_id():
+    return {
+        "deployment": "2026-06-10-debug-01"
     }
 # ----------------------------------
 # Fuseki debug
