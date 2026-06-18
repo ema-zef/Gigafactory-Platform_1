@@ -1,6 +1,8 @@
 import { useState } from "react";
 import PlotChart from "./components/PlotChart";
 import GigafactoryFlow from "./components/GigafactoryFlow";
+import EquipmentTable from "./components/EquipmentTable";
+import EquipmentManager from "./components/EquipmentManager";
 
 function App() {
   const [backendStatus, setBackendStatus] = useState("Checking...");
@@ -29,6 +31,8 @@ function App() {
       {/* Factory Flow on top */}
       <div style={{ marginBottom: "40px" }}>
         <GigafactoryFlow />
+        <EquipmentTable />
+        <EquipmentManager />
       </div>
 
       {/* Graphs below */}
