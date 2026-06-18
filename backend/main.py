@@ -8,6 +8,7 @@ import numpy as np
 import requests
 
 from models import LoginRequest
+from models.equipment import EquipmentCreate
 
 # ----------------------------------
 # App
@@ -85,7 +86,13 @@ app.add_middleware(
 # Neon PostgreSQL connection
 # ----------------------------------
 
-DATABASE_URL = os.getenv("DATABASE_URL")
+from dotenv import load_dotenv
+
+load_dotenv()
+DATABASE_URL = os.getenv(
+    "DATABASE_URL",
+    "postgresql://neondb_owner:npg_USPOIom6aK9q@ep-little-cake-a2t42vvz-pooler.eu-central-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
+)
 
 engine = None
 
@@ -184,58 +191,65 @@ def db_test():
 # ----------------------------------
 
 @app.post("/equipment")
-def create_equipment(equipment: EquipmentCreate):
+def create_equipment(equipment: dict):
 
-    if engine is None:
-        raise HTTPException(
-            status_code=500,
-            detail="DATABASE_URL not configured"
+    columns = ", ".join(equipment.keys())
+
+    values = ", ".join(
+        [f":{k}" for k in equipment.keys()]
+    )
+
+    sql = f"""
+        INSERT INTO equipment
+        ({columns})
+        VALUES
+        ({values})
+    """
+
+    with engine.begin() as conn:
+
+        conn.execute(
+            text(sql),
+            equipment
         )
 
-    try:
+    return {
+        "status": "created"
+    }
 
-        with engine.begin() as conn:
+# ----------------------------------
+# Equipment Update
+# ----------------------------------
 
-            conn.execute(
-                text("""
-                    INSERT INTO equipment (
-                        equipment_name,
-                        equipment_type,
-                        manufacturer,
-                        power_kw,
-                        capex_eur,
-                        throughput
-                    )
-                    VALUES (
-                        :equipment_name,
-                        :equipment_type,
-                        :manufacturer,
-                        :power_kw,
-                        :capex_eur,
-                        :throughput
-                    )
-                """),
-                {
-                    "equipment_name": equipment.equipment_name,
-                    "equipment_type": equipment.equipment_type,
-                    "manufacturer": equipment.manufacturer,
-                    "power_kw": equipment.power_kw,
-                    "capex_eur": equipment.capex_eur,
-                    "throughput": equipment.throughput,
-                }
-            )
+@app.put("/equipment/{equipment_id}")
+def update_equipment(
+    equipment_id: int,
+    equipment: dict
+):
 
-        return {
-            "status": "success",
-            "message": "Equipment created"
-        }
+    set_clause = ", ".join(
+        [f"{k}=:{k}" for k in equipment.keys()]
+    )
 
-    except Exception as e:
+    sql = f"""
+        UPDATE equipment
+        SET {set_clause}
+        WHERE id=:id
+    """
 
-        raise HTTPException(
-            status_code=500,
-            detail=str(e)
+    with engine.begin() as conn:
+
+        conn.execute(
+            text(sql),
+            {
+                **equipment,
+                "id": equipment_id
+            }
         )
+
+    return {
+        "status": "updated"
+    }
 
 # ----------------------------------
 # Equipment READ
@@ -244,41 +258,17 @@ def create_equipment(equipment: EquipmentCreate):
 @app.get("/equipment")
 def get_equipment():
 
-    if engine is None:
-        raise HTTPException(
-            status_code=500,
-            detail="DATABASE_URL not configured"
+    with engine.connect() as conn:
+
+        result = conn.execute(
+            text("SELECT * FROM equipment ORDER BY id")
         )
 
-    try:
+        return [
+            dict(row._mapping)
+            for row in result
+        ]
 
-        with engine.connect() as conn:
-
-            result = conn.execute(
-                text("""
-                    SELECT
-                        equipment_id,
-                        equipment_name,
-                        equipment_type,
-                        manufacturer,
-                        power_kw,
-                        capex_eur,
-                        throughput
-                    FROM equipment
-                    ORDER BY equipment_name
-                """)
-            )
-
-            rows = result.mappings().all()
-
-            return rows
-
-    except Exception as e:
-
-        raise HTTPException(
-            status_code=500,
-            detail=str(e)
-        )
 # ----------------------------------
 # Equipment DELETE
 # ----------------------------------
@@ -286,34 +276,49 @@ def get_equipment():
 @app.delete("/equipment/{equipment_id}")
 def delete_equipment(equipment_id: int):
 
-    if engine is None:
-        raise HTTPException(
-            status_code=500,
-            detail="DATABASE_URL not configured"
+    with engine.begin() as conn:
+
+        conn.execute(
+            text("""
+                DELETE FROM equipment
+                WHERE id=:id
+            """),
+            {"id": equipment_id}
         )
 
-    try:
+    return {
+        "status": "deleted"
+    }
 
-        with engine.begin() as conn:
+# ----------------------------------
+# Equipment Metadata
+# ----------------------------------
 
-            conn.execute(
-                text("""
-                    DELETE FROM equipment
-                    WHERE equipment_id = :id
-                """),
-                {"id": equipment_id}
-            )
+@app.get("/equipment/schema")
+def equipment_schema():
 
-        return {
-            "status": "success"
-        }
+    with engine.connect() as conn:
 
-    except Exception as e:
-
-        raise HTTPException(
-            status_code=500,
-            detail=str(e)
+        result = conn.execute(
+            text("""
+                SELECT
+                    column_name,
+                    data_type
+                FROM information_schema.columns
+                WHERE table_name='equipment'
+                ORDER BY ordinal_position
+            """)
         )
+
+        return [
+            dict(row._mapping)
+            for row in result
+        ]
+
+# ----------------------------------
+# Equipment Check
+# ----------------------------------
+
 @app.get("/equipment/check")
 def check_equipment_table():
 
