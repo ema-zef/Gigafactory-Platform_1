@@ -3,135 +3,251 @@ import axios from "axios";
 
 export default function EquipmentManager() {
 
-  const [equipment, setEquipment] = useState([]);
+const [equipment, setEquipment] = useState([]);
 
-  const [newEquipment, setNewEquipment] = useState({
-    technology_name: "",
-    process: "",
-    capacity: ""
-  });
+const [editingId, setEditingId] = useState(null);
 
-  const API =
-    import.meta.env.VITE_API_URL ||
-    "http://localhost:8000";
+const [editData, setEditData] = useState({
+technology_name: "",
+process: "",
+capacity: ""
+});
 
-  const loadEquipment = async () => {
+const [newEquipment, setNewEquipment] = useState({
+technology_name: "",
+process: "",
+capacity: ""
+});
 
-    const response = await axios.get(
-      `${API}/equipment`
-    );
+const API =
+import.meta.env.VITE_API_URL ||
+"http://localhost:8000";
 
-    setEquipment(response.data);
-  };
+const loadEquipment = async () => {
 
-  useEffect(() => {
-    loadEquipment();
-  }, []);
+```
+const response = await axios.get(
+  `${API}/equipment`
+);
 
-  const createEquipment = async () => {
+setEquipment(response.data);
+```
 
-    await axios.post(
-      `${API}/equipment`,
-      newEquipment
-    );
+};
 
-    setNewEquipment({
-      technology_name: "",
-      process: "",
-      capacity: ""
-    });
+useEffect(() => {
+loadEquipment();
+}, []);
 
-    loadEquipment();
-  };
+const createEquipment = async () => {
 
-  const deleteEquipment = async (id) => {
+```
+await axios.post(
+  `${API}/equipment`,
+  newEquipment
+);
 
-    await axios.delete(
-      `${API}/equipment/${id}`
-    );
+setNewEquipment({
+  technology_name: "",
+  process: "",
+  capacity: ""
+});
 
-    loadEquipment();
-  };
+loadEquipment();
+```
 
-  return (
-    <div>
+};
 
-      <h2>Equipment Manager</h2>
+const deleteEquipment = async (id) => {
 
-      <div
-        style={{
-          marginBottom: "20px",
-          display: "flex",
-          gap: "10px"
-        }}
-      >
+```
+await axios.delete(
+  `${API}/equipment/${id}`
+);
 
-        <input
-          placeholder="Technology Name"
-          value={newEquipment.technology_name}
-          onChange={(e) =>
-            setNewEquipment({
-              ...newEquipment,
-              technology_name: e.target.value
-            })
-          }
-        />
+loadEquipment();
+```
 
-        <input
-          placeholder="Process"
-          value={newEquipment.process}
-          onChange={(e) =>
-            setNewEquipment({
-              ...newEquipment,
-              process: e.target.value
-            })
-          }
-        />
+};
 
-        <input
-          placeholder="Capacity"
-          value={newEquipment.capacity}
-          onChange={(e) =>
-            setNewEquipment({
-              ...newEquipment,
-              capacity: e.target.value
-            })
-          }
-        />
+const startEdit = (row) => {
 
-        <button onClick={createEquipment}>
-          Add Equipment
-        </button>
+```
+setEditingId(row.id);
 
-      </div>
+setEditData({
+  technology_name: row.technology_name || "",
+  process: row.process || "",
+  capacity: row.capacity || ""
+});
+```
 
-      <table border="1" cellPadding="5">
+};
 
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Technology</th>
-            <th>Process</th>
-            <th>Capacity</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
+const updateEquipment = async (id) => {
 
-        <tbody>
+```
+await axios.put(
+  `${API}/equipment/${id}`,
+  editData
+);
 
-          {equipment.map((row) => (
+setEditingId(null);
 
-            <tr key={row.id}>
+loadEquipment();
+```
 
-              <td>{row.id}</td>
+};
 
-              <td>{row.technology_name}</td>
+return ( <div>
 
-              <td>{row.process}</td>
+```
+  <h2>Equipment Manager</h2>
 
-              <td>{row.capacity}</td>
+  <div
+    style={{
+      marginBottom: "20px",
+      display: "flex",
+      gap: "10px"
+    }}
+  >
 
-              <td>
+    <input
+      placeholder="Technology Name"
+      value={newEquipment.technology_name}
+      onChange={(e) =>
+        setNewEquipment({
+          ...newEquipment,
+          technology_name: e.target.value
+        })
+      }
+    />
+
+    <input
+      placeholder="Process"
+      value={newEquipment.process}
+      onChange={(e) =>
+        setNewEquipment({
+          ...newEquipment,
+          process: e.target.value
+        })
+      }
+    />
+
+    <input
+      placeholder="Capacity"
+      value={newEquipment.capacity}
+      onChange={(e) =>
+        setNewEquipment({
+          ...newEquipment,
+          capacity: e.target.value
+        })
+      }
+    />
+
+    <button onClick={createEquipment}>
+      Add Equipment
+    </button>
+
+  </div>
+
+  <table border="1" cellPadding="5">
+
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Technology</th>
+        <th>Process</th>
+        <th>Capacity</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+
+    <tbody>
+
+      {equipment.map((row) => (
+
+        <tr key={row.id}>
+
+          <td>{row.id}</td>
+
+          <td>
+            {editingId === row.id ? (
+              <input
+                value={editData.technology_name}
+                onChange={(e) =>
+                  setEditData({
+                    ...editData,
+                    technology_name: e.target.value
+                  })
+                }
+              />
+            ) : (
+              row.technology_name
+            )}
+          </td>
+
+          <td>
+            {editingId === row.id ? (
+              <input
+                value={editData.process}
+                onChange={(e) =>
+                  setEditData({
+                    ...editData,
+                    process: e.target.value
+                  })
+                }
+              />
+            ) : (
+              row.process
+            )}
+          </td>
+
+          <td>
+            {editingId === row.id ? (
+              <input
+                value={editData.capacity}
+                onChange={(e) =>
+                  setEditData({
+                    ...editData,
+                    capacity: e.target.value
+                  })
+                }
+              />
+            ) : (
+              row.capacity
+            )}
+          </td>
+
+          <td>
+
+            {editingId === row.id ? (
+              <>
+                <button
+                  onClick={() =>
+                    updateEquipment(row.id)
+                  }
+                >
+                  Save
+                </button>
+
+                <button
+                  onClick={() =>
+                    setEditingId(null)
+                  }
+                >
+                  Cancel
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={() =>
+                    startEdit(row)
+                  }
+                >
+                  Edit
+                </button>
 
                 <button
                   onClick={() =>
@@ -140,17 +256,21 @@ export default function EquipmentManager() {
                 >
                   Delete
                 </button>
+              </>
+            )}
 
-              </td>
+          </td>
 
-            </tr>
+        </tr>
 
-          ))}
+      ))}
 
-        </tbody>
+    </tbody>
 
-      </table>
+  </table>
 
-    </div>
-  );
+</div>
+```
+
+);
 }
