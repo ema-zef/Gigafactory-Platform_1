@@ -8,7 +8,6 @@ import numpy as np
 import requests
 
 from models import LoginRequest
-from models.equipment import EquipmentCreate
 
 # ----------------------------------
 # App
@@ -94,10 +93,39 @@ DATABASE_URL = os.getenv(
     "postgresql://neondb_owner:npg_USPOIom6aK9q@ep-little-cake-a2t42vvz-pooler.eu-central-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
 )
 
-engine = None
+if not DATABASE_URL:
+    raise Exception("DATABASE_URL not found")
 
-if DATABASE_URL:
-    engine = create_engine(DATABASE_URL)
+engine = create_engine(
+    DATABASE_URL,
+    pool_pre_ping=True
+)
+
+# ----------------------------------
+# Health Check
+# ----------------------------------
+
+@app.get("/health")
+def health():
+
+    try:
+
+        with engine.connect() as conn:
+
+            conn.execute(
+                text("SELECT 1")
+            )
+
+        return {
+            "status": "healthy"
+        }
+
+    except Exception as e:
+
+        return {
+            "status": "error",
+            "detail": str(e)
+        }
 
 # ----------------------------------
 # Demo users
@@ -425,8 +453,10 @@ def update_product_configuration(
 # Product Configuration READ
 # ----------------------------------
 
-@app.get("/product_configuration")
-def get_product_configuration():
+@app.get("/product_configuration/check")
+def check_product_configuration():
+
+    try:
 
     with engine.connect() as conn:
 
@@ -443,6 +473,12 @@ def get_product_configuration():
             for row in result
         ]
 
+    except Exception as e:
+
+        raise HTTPException(
+            status_code=500,
+            detail=str(e)
+        )
 
 # ----------------------------------
 # Product Configuration DELETE
@@ -596,23 +632,42 @@ def update_production_configuration(
 # Production Configuration READ
 # ----------------------------------
 
-@app.get("/production_configuration")
-def get_production_configuration():
+@app.get("/production_configuration/check")
+def check_production_configuration():
 
-    with engine.connect() as conn:
+    try:
 
-        result = conn.execute(
-            text("""
-                SELECT *
-                FROM production_configuration
-            """)
+        with engine.connect() as conn:
+
+            result = conn.execute(
+                text("""
+                    SELECT
+                        column_name,
+                        data_type
+                    FROM information_schema.columns
+                    WHERE table_name='production_configuration'
+                    ORDER BY ordinal_position
+                """)
+            )
+
+            columns = [
+                dict(row._mapping)
+                for row in result
+            ]
+
+            return {
+                "table_exists":
+                    len(columns) > 0,
+                "columns":
+                    columns
+            }
+
+    except Exception as e:
+
+        raise HTTPException(
+            status_code=500,
+            detail=str(e)
         )
-
-        return [
-            dict(row._mapping)
-            for row in result
-        ]
-
 
 # ----------------------------------
 # Production Configuration DELETE
