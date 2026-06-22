@@ -355,6 +355,346 @@ def check_equipment_table():
         )
 
 # ----------------------------------
+# Product Configuration CREATE
+# ----------------------------------
+
+@app.post("/product_configuration")
+def create_product_configuration(record: dict):
+
+    columns = ", ".join(record.keys())
+
+    values = ", ".join(
+        [f":{k}" for k in record.keys()]
+    )
+
+    sql = f"""
+        INSERT INTO product_configuration
+        ({columns})
+        VALUES
+        ({values})
+    """
+
+    with engine.begin() as conn:
+
+        conn.execute(
+            text(sql),
+            record
+        )
+
+    return {
+        "status": "created"
+    }
+
+
+# ----------------------------------
+# Product Configuration UPDATE
+# ----------------------------------
+
+@app.put("/product_configuration/{record_id}")
+def update_product_configuration(
+    record_id: int,
+    record: dict
+):
+
+    set_clause = ", ".join(
+        [f"{k}=:{k}" for k in record.keys()]
+    )
+
+    sql = f"""
+        UPDATE product_configuration
+        SET {set_clause}
+        WHERE id=:id
+    """
+
+    with engine.begin() as conn:
+
+        conn.execute(
+            text(sql),
+            {
+                **record,
+                "id": record_id
+            }
+        )
+
+    return {
+        "status": "updated"
+    }
+
+
+# ----------------------------------
+# Product Configuration READ
+# ----------------------------------
+
+@app.get("/product_configuration")
+def get_product_configuration():
+
+    with engine.connect() as conn:
+
+        result = conn.execute(
+            text("""
+                SELECT *
+                FROM product_configuration
+                ORDER BY id
+            """)
+        )
+
+        return [
+            dict(row._mapping)
+            for row in result
+        ]
+
+
+# ----------------------------------
+# Product Configuration DELETE
+# ----------------------------------
+
+@app.delete("/product_configuration/{record_id}")
+def delete_product_configuration(
+    record_id: int
+):
+
+    with engine.begin() as conn:
+
+        conn.execute(
+            text("""
+                DELETE FROM product_configuration
+                WHERE id=:id
+            """),
+            {"id": record_id}
+        )
+
+    return {
+        "status": "deleted"
+    }
+
+
+# ----------------------------------
+# Product Configuration Schema
+# ----------------------------------
+
+@app.get("/product_configuration/schema")
+def product_configuration_schema():
+
+    with engine.connect() as conn:
+
+        result = conn.execute(
+            text("""
+                SELECT
+                    column_name,
+                    data_type
+                FROM information_schema.columns
+                WHERE table_name='product_configuration'
+                ORDER BY ordinal_position
+            """)
+        )
+
+        return [
+            dict(row._mapping)
+            for row in result
+        ]
+
+
+# ----------------------------------
+# Product Configuration Check
+# ----------------------------------
+
+@app.get("/product_configuration/check")
+def check_product_configuration():
+
+    with engine.connect() as conn:
+
+        result = conn.execute(
+            text("""
+                SELECT
+                    column_name,
+                    data_type
+                FROM information_schema.columns
+                WHERE table_name='product_configuration'
+                ORDER BY ordinal_position
+            """)
+        )
+
+        columns = [
+            dict(row._mapping)
+            for row in result
+        ]
+
+        return {
+            "table_exists":
+                len(columns) > 0,
+            "columns":
+                columns
+        }
+# ----------------------------------
+# Production Configuration CREATE
+# ----------------------------------
+
+@app.post("/production_configuration")
+def create_production_configuration(
+    record: dict
+):
+
+    columns = ", ".join(record.keys())
+
+    values = ", ".join(
+        [f":{k}" for k in record.keys()]
+    )
+
+    sql = f"""
+        INSERT INTO production_configuration
+        ({columns})
+        VALUES
+        ({values})
+    """
+
+    with engine.begin() as conn:
+
+        conn.execute(
+            text(sql),
+            record
+        )
+
+    return {
+        "status": "created"
+    }
+
+
+# ----------------------------------
+# Production Configuration UPDATE
+# ----------------------------------
+
+@app.put("/production_configuration/{record_id}")
+def update_production_configuration(
+    record_id: int,
+    data: dict
+):
+
+    set_clause = ", ".join(
+        [f"{k}=:{k}" for k in data.keys()]
+    )
+
+    sql = f"""
+        UPDATE production_configuration
+        SET {set_clause}
+        WHERE id=:id
+    """
+
+    with engine.begin() as conn:
+
+        conn.execute(
+            text(sql),
+            {
+                **data,
+                "id": record_id
+            }
+        )
+
+    return {"status": "updated"}
+
+
+# ----------------------------------
+# Production Configuration READ
+# ----------------------------------
+
+@app.get("/production_configuration")
+def get_production_configuration():
+
+    with engine.connect() as conn:
+
+        result = conn.execute(
+            text("""
+                SELECT *
+                FROM production_configuration
+            """)
+        )
+
+        return [
+            dict(row._mapping)
+            for row in result
+        ]
+
+
+# ----------------------------------
+# Production Configuration DELETE
+# ----------------------------------
+
+@app.delete("/production_configuration/{record_id}")
+def delete_production_configuration(
+    record_id: int
+):
+
+    with engine.begin() as conn:
+
+        conn.execute(
+            text("""
+                DELETE FROM production_configuration
+                WHERE id=:id
+            """),
+            {"id": record_id}
+        )
+
+    return {"status": "deleted"}
+
+
+# ----------------------------------
+# Production Configuration Schema
+# ----------------------------------
+
+@app.get("/production_configuration/schema")
+def production_configuration_schema():
+
+    with engine.connect() as conn:
+
+        result = conn.execute(
+            text("""
+                SELECT
+                    column_name,
+                    data_type
+                FROM information_schema.columns
+                WHERE table_name='production_configuration'
+                ORDER BY ordinal_position
+            """)
+        )
+
+        return [
+            dict(row._mapping)
+            for row in result
+        ]
+
+
+# ----------------------------------
+# Production Configuration Check
+# ----------------------------------
+
+@app.get("/production_configuration/check")
+def check_production_configuration():
+
+    with engine.connect() as conn:
+
+        result = conn.execute(
+            text("""
+                SELECT
+                    column_name,
+                    data_type
+                FROM information_schema.columns
+                WHERE table_name='production_configuration'
+                ORDER BY ordinal_position
+            """)
+        )
+
+        columns = [
+            dict(row._mapping)
+            for row in result
+        ]
+
+        return {
+            "table_exists":
+                len(columns) > 0,
+            "columns":
+                columns
+        }
+
+# ----------------------------------
 # Fuseki test
 # ----------------------------------
 
