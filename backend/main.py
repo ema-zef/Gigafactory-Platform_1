@@ -611,7 +611,15 @@ def get_product_configuration_options():
 
         with engine.connect() as conn:
 
-            result = conn.execute(...)
+            result = conn.execute(
+                text("""
+                    SELECT DISTINCT TRIM(productcode)
+                    FROM product_configuration
+                    WHERE productcode IS NOT NULL
+                    AND TRIM(productcode) <> ''
+                    ORDER BY productcode
+                """)
+            )
 
             return [
                 row[0]
@@ -624,6 +632,7 @@ def get_product_configuration_options():
             status_code=500,
             detail=str(e)
         )
+
 # ----------------------------------
 # Product Configuration DELETE
 # ----------------------------------
@@ -830,24 +839,34 @@ def get_production_configuration():
 # Production Configuration Options
 # ----------------------------------
 
-@app.get("/debug-production-columns")
-def debug_production_columns():
+@app.get("/production_configuration/options")
+def get_production_configuration_options():
 
-    with engine.connect() as conn:
+    try:
 
-        result = conn.execute(
-            text("""
-                SELECT column_name
-                FROM information_schema.columns
-                WHERE table_name='production_configuration'
-                ORDER BY ordinal_position
-            """)
+        with engine.connect() as conn:
+
+            result = conn.execute(
+                text("""
+                    SELECT DISTINCT code
+                    FROM production_configuration
+                    WHERE code IS NOT NULL
+                    AND TRIM(code) <> ''
+                    ORDER BY code
+                """)
+            )
+
+            return [
+                row[0]
+                for row in result
+            ]
+
+    except Exception as e:
+
+        raise HTTPException(
+            status_code=500,
+            detail=str(e)
         )
-
-        return [
-            row[0]
-            for row in result
-        ]
 
 # ----------------------------------
 # Production Configuration DELETE
