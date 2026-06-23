@@ -8,12 +8,132 @@ import numpy as np
 import requests
 
 from models import LoginRequest
+from models.simulation import SimulationRequest
+from uuid import uuid4
+import json
 
 # ----------------------------------
 # App
 # ----------------------------------
 
 app = FastAPI()
+
+# ----------------------------------
+# Temporary Simulation Storage
+# ----------------------------------
+
+simulation_sessions = {}
+
+# ----------------------------------
+# Create Simulation Session
+# ----------------------------------
+
+@app.post("/simulation_session")
+def create_simulation_session(data: dict):
+
+    session_id = str(uuid4())
+
+    simulation_sessions[session_id] = {
+
+        "plant_code":
+            data.get("plant_code"),
+
+        "product_code":
+            data.get("product_code"),
+
+        "target_output":
+            data.get("target_output"),
+
+        "results":
+            []
+    }
+
+    return {
+        "session_id": session_id
+    }
+
+
+# ----------------------------------
+# Save Simulation
+# ----------------------------------
+
+@app.post("/save_simulation/{session_id}")
+def save_simulation(session_id: str):
+
+    if session_id not in simulation_sessions:
+
+        raise HTTPException(
+            status_code=404,
+            detail="Session not found"
+        )
+
+    session = simulation_sessions[session_id]
+
+    with engine.begin() as conn:
+
+        conn.execute(
+
+            text("""
+
+                INSERT INTO simulation_results (
+
+                    session_id,
+
+                    plant_code,
+
+                    product_code,
+
+                    target_output,
+
+                    simulation_result
+
+                )
+
+                VALUES (
+
+                    :session_id,
+
+                    :plant_code,
+
+                    :product_code,
+
+                    :target_output,
+
+                    :simulation_result
+
+                )
+
+            """),
+
+            {
+
+                "session_id":
+                    session_id,
+
+                "plant_code":
+                    session["plant_code"],
+
+                "product_code":
+                    session["product_code"],
+
+                "target_output":
+                    session["target_output"],
+
+                "simulation_result":
+                    json.dumps(
+                        session["results"]
+                    )
+
+            }
+
+        )
+
+    return {
+
+        "status":
+            "saved"
+
+    }
 
 # ----------------------------------
 # Deployment verification
@@ -453,25 +573,57 @@ def update_product_configuration(
 # Product Configuration READ
 # ----------------------------------
 
-@app.get("/product_configuration/check")
-def check_product_configuration():
+@app.get("/product_configuration")
+def get_product_configuration():
 
     try:
 
-    with engine.connect() as conn:
+        with engine.connect() as conn:
 
-        result = conn.execute(
-            text("""
-                SELECT *
-                FROM product_configuration
-                ORDER BY id
-            """)
+            result = conn.execute(
+                text("""
+                    SELECT *
+                    FROM product_configuration
+                    ORDER BY id
+                """)
+            )
+
+            return [
+                dict(row._mapping)
+                for row in result
+            ]
+
+    except Exception as e:
+
+        raise HTTPException(
+            status_code=500,
+            detail=str(e)
         )
 
-        return [
-            dict(row._mapping)
-            for row in result
-        ]
+# ----------------------------------
+# Product Configuration Options
+# ----------------------------------
+
+@app.get("/product_configuration/options")
+def get_product_configuration_options():
+
+    try:
+
+        with engine.connect() as conn:
+
+            result = conn.execute(
+                text("""
+                    SELECT DISTINCT productcode
+                    FROM product_configuration
+                    WHERE productcode IS NOT NULL
+                    ORDER BY productcode
+                """)
+            )
+
+            return [
+                row[0]
+                for row in result
+            ]
 
     except Exception as e:
 
@@ -632,8 +784,8 @@ def update_production_configuration(
 # Production Configuration READ
 # ----------------------------------
 
-@app.get("/production_configuration/check")
-def check_production_configuration():
+@app.get("/production_configuration")
+def get_production_configuration():
 
     try:
 
@@ -641,26 +793,48 @@ def check_production_configuration():
 
             result = conn.execute(
                 text("""
-                    SELECT
-                        column_name,
-                        data_type
-                    FROM information_schema.columns
-                    WHERE table_name='production_configuration'
-                    ORDER BY ordinal_position
+                    SELECT *
+                    FROM production_configuration
+                    ORDER BY id
                 """)
             )
 
-            columns = [
+            return [
                 dict(row._mapping)
                 for row in result
             ]
 
-            return {
-                "table_exists":
-                    len(columns) > 0,
-                "columns":
-                    columns
-            }
+    except Exception as e:
+
+        raise HTTPException(
+            status_code=500,
+            detail=str(e)
+        )
+
+# ----------------------------------
+# Production Configuration Options
+# ----------------------------------
+
+@app.get("/production_configuration/options")
+def get_production_configuration_options():
+
+    try:
+
+        with engine.connect() as conn:
+
+            result = conn.execute(
+                text("""
+                    SELECT DISTINCT plantcode
+                    FROM production_configuration
+                    WHERE plantcode IS NOT NULL
+                    ORDER BY plantcode
+                """)
+            )
+
+            return [
+                row[0]
+                for row in result
+            ]
 
     except Exception as e:
 
@@ -786,6 +960,78 @@ def fuseki_test():
             status_code=500,
             detail=str(e)
         )
+# ----------------------------------
+# Temporary Simulation endpoint
+# ----------------------------------
+
+@app.post("/simulate")
+def simulate(data: SimulationRequest):
+
+    with engine.connect() as conn:
+
+        result = conn.execute(
+            text("""
+                SELECT *
+                FROM process_steps
+                WHERE product_code=:product
+                ORDER BY step_order DESC
+            """),
+            {
+                "product": data.product_code
+            }
+        )
+
+        steps = [
+            dict(row._mapping)
+            for row in result
+        ]
+
+    required_output = data.target_output
+
+    simulation = []
+
+    for step in steps:
+
+        quality_rate = float(
+            step["quality_rate"]
+        )
+
+        input_required = (
+            required_output / quality_rate
+        )
+
+        simulation.append({
+
+            "process_name":
+                step["process_name"],
+
+            "required_output":
+                round(required_output, 2),
+
+            "required_input":
+                round(input_required, 2),
+
+            "quality_rate":
+                quality_rate
+        })
+
+        required_output = input_required
+
+    simulation.reverse()
+
+    return {
+        "plant_code":
+            data.plant_code,
+
+        "product_code":
+            data.product_code,
+
+        "target_output":
+            data.target_output,
+
+        "simulation":
+            simulation
+    }
 
 # ----------------------------------
 # Root endpoint
