@@ -604,8 +604,8 @@ def get_product_configuration():
 # Product Configuration Options
 # ----------------------------------
 
-@app.get("/product_configuration/options")
-def get_product_configuration_options():
+@app.get("/production_configuration/options")
+def get_production_configuration_options():
 
     try:
 
@@ -613,10 +613,10 @@ def get_product_configuration_options():
 
             result = conn.execute(
                 text("""
-                    SELECT DISTINCT productcode
-                    FROM product_configuration
-                    WHERE productcode IS NOT NULL
-                    ORDER BY productcode
+                    SELECT DISTINCT code
+                    FROM production_configuration
+                    WHERE code IS NOT NULL
+                    ORDER BY code
                 """)
             )
 
@@ -713,6 +713,29 @@ def check_product_configuration():
             "columns":
                 columns
         }
+# ----------------------------------
+# Debug Production Configuration Columns
+# ----------------------------------
+
+@app.get("/debug-production-columns")
+def debug_production_columns():
+
+    with engine.connect() as conn:
+
+        result = conn.execute(
+            text("""
+                SELECT column_name
+                FROM information_schema.columns
+                WHERE table_name='production_configuration'
+                ORDER BY ordinal_position
+            """)
+        )
+
+        return [
+            row[0]
+            for row in result
+        ]
+
 # ----------------------------------
 # Production Configuration CREATE
 # ----------------------------------
@@ -815,33 +838,24 @@ def get_production_configuration():
 # Production Configuration Options
 # ----------------------------------
 
-@app.get("/production_configuration/options")
-def get_production_configuration_options():
+@app.get("/debug-production-columns")
+def debug_production_columns():
 
-    try:
+    with engine.connect() as conn:
 
-        with engine.connect() as conn:
-
-            result = conn.execute(
-                text("""
-                    SELECT DISTINCT plantcode
-                    FROM production_configuration
-                    WHERE plantcode IS NOT NULL
-                    ORDER BY plantcode
-                """)
-            )
-
-            return [
-                row[0]
-                for row in result
-            ]
-
-    except Exception as e:
-
-        raise HTTPException(
-            status_code=500,
-            detail=str(e)
+        result = conn.execute(
+            text("""
+                SELECT column_name
+                FROM information_schema.columns
+                WHERE table_name='production_configuration'
+                ORDER BY ordinal_position
+            """)
         )
+
+        return [
+            row[0]
+            for row in result
+        ]
 
 # ----------------------------------
 # Production Configuration DELETE
