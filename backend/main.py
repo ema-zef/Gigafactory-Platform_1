@@ -613,10 +613,9 @@ def get_product_configuration_options():
 
             result = conn.execute(
                 text("""
-                    SELECT DISTINCT TRIM(productcode)
+                    SELECT DISTINCT productcode
                     FROM product_configuration
                     WHERE productcode IS NOT NULL
-                    AND TRIM(productcode) <> ''
                     ORDER BY productcode
                 """)
             )
