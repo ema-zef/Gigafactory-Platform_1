@@ -1,6 +1,7 @@
 import React from "react";
 import ReactFlow from "reactflow";
 import "reactflow/dist/style.css";
+import EquipmentPalette from "./EquipmentPalette";
 
 const nodes = [
   {
@@ -43,3 +44,36 @@ export default function GigafactoryFlow() {
     </div>
   );
 }
+
+const onDrop = (event) => {
+
+  event.preventDefault();
+
+  const equipment =
+    JSON.parse(
+      event.dataTransfer.getData(
+        "equipment"
+      )
+    );
+
+  const position =
+    screenToFlowPosition({
+      x: event.clientX,
+      y: event.clientY
+    });
+
+  const newNode = {
+    id: crypto.randomUUID(),
+    type: "default",
+    position,
+    data: {
+      label:
+        equipment.technology_name
+    }
+  };
+
+  setNodes(nds => [
+    ...nds,
+    newNode
+  ]);
+};

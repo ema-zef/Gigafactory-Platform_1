@@ -1,52 +1,163 @@
-import { useEffect, useState } from "react";
-import axios from "axios";
+export default function EquipmentTable({
 
-export default function EquipmentTable() {
+columns,
+equipment,
 
-  const [equipment, setEquipment] = useState([]);
+editingId,
+editData,
+setEditData,
 
-  useEffect(() => {
+startEdit,
+updateEquipment,
+deleteEquipment,
 
-    axios
-      .get("http://localhost:8000/equipment")
-      .then((res) => setEquipment(res.data))
-      .catch(console.error);
+setEditingId
 
-  }, []);
+}) {
 
-  return (
-    <div>
+return (
 
-      <h2>Equipment Database</h2>
 
-      <table border="1">
+<div
+  style={{
+    overflowX: "auto"
+  }}
+>
 
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Process</th>
-            <th>Technology</th>
-            <th>Capacity</th>
-          </tr>
-        </thead>
+  <table
+    border="1"
+    cellPadding="5"
+  >
 
-        <tbody>
+    <thead>
 
-          {equipment.map((eq) => (
+      <tr>
 
-            <tr key={eq.id}>
-              <td>{eq.id}</td>
-              <td>{eq.process}</td>
-              <td>{eq.technology_name}</td>
-              <td>{eq.capacity}</td>
-            </tr>
+        <th>ID</th>
+
+        {columns.map(col => (
+
+          <th
+            key={col.column_name}
+          >
+            {col.column_name}
+          </th>
+
+        ))}
+
+        <th>Actions</th>
+
+      </tr>
+
+    </thead>
+
+    <tbody>
+
+      {equipment.map(row => (
+
+        <tr key={row.id}>
+
+          <td>{row.id}</td>
+
+          {columns.map(col => (
+
+            <td key={col.column_name}>
+
+              {editingId === row.id ? (
+
+                <input
+                  value={
+                    editData[
+                      col.column_name
+                    ] || ""
+                  }
+                  onChange={(e) =>
+                    setEditData({
+                      ...editData,
+                      [col.column_name]:
+                        e.target.value
+                    })
+                  }
+                />
+
+              ) : (
+
+                String(
+                  row[col.column_name]
+                  ?? ""
+                )
+
+              )}
+
+            </td>
 
           ))}
 
-        </tbody>
+          <td>
 
-      </table>
+            {editingId === row.id ? (
 
-    </div>
-  );
+              <>
+
+                <button
+                  onClick={() =>
+                    updateEquipment(
+                      row.id
+                    )
+                  }
+                >
+                  Save
+                </button>
+
+                <button
+                  onClick={() =>
+                    setEditingId(null)
+                  }
+                >
+                  Cancel
+                </button>
+
+              </>
+
+            ) : (
+
+              <>
+
+                <button
+                  onClick={() =>
+                    startEdit(row)
+                  }
+                >
+                  Edit
+                </button>
+
+                <button
+                  onClick={() =>
+                    deleteEquipment(
+                      row.id
+                    )
+                  }
+                >
+                  Delete
+                </button>
+
+              </>
+
+            )}
+
+          </td>
+
+        </tr>
+
+      ))}
+
+    </tbody>
+
+  </table>
+
+</div>
+
+
+);
+
 }
