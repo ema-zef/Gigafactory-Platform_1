@@ -604,26 +604,24 @@ def get_product_configuration():
 # Product Configuration Options
 # ----------------------------------
 
-@app.get("/production_configuration/options")
-def get_production_configuration_options():
+@app.get("/product_configuration/options")
+def get_product_configuration_options():
 
-    try:
+    with engine.connect() as conn:
 
-        with engine.connect() as conn:
+        result = conn.execute(
+            text("""
+                SELECT DISTINCT productcode
+                FROM product_configuration
+                WHERE productcode IS NOT NULL
+                ORDER BY productcode
+            """)
+        )
 
-            result = conn.execute(
-                text("""
-                    SELECT DISTINCT code
-                    FROM production_configuration
-                    WHERE code IS NOT NULL
-                    ORDER BY code
-                """)
-            )
-
-            return [
-                row[0]
-                for row in result
-            ]
+        return [
+            row[0]
+            for row in result
+        ]
 
     except Exception as e:
 
