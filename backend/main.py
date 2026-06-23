@@ -607,21 +607,16 @@ def get_product_configuration():
 @app.get("/product_configuration/options")
 def get_product_configuration_options():
 
-    with engine.connect() as conn:
+    try:
 
-        result = conn.execute(
-            text("""
-                SELECT DISTINCT productcode
-                FROM product_configuration
-                WHERE productcode IS NOT NULL
-                ORDER BY productcode
-            """)
-        )
+        with engine.connect() as conn:
 
-        return [
-            row[0]
-            for row in result
-        ]
+            result = conn.execute(...)
+
+            return [
+                row[0]
+                for row in result
+            ]
 
     except Exception as e:
 
@@ -629,7 +624,6 @@ def get_product_configuration_options():
             status_code=500,
             detail=str(e)
         )
-
 # ----------------------------------
 # Product Configuration DELETE
 # ----------------------------------
