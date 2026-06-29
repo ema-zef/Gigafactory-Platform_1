@@ -11,9 +11,7 @@ from models import LoginRequest
 from models.simulation import SimulationRequest
 from uuid import uuid4
 import json
-import traceback
-traceback.print_exc()
-raise
+
 
 # ----------------------------------
 # App
