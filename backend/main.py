@@ -796,15 +796,17 @@ def get_product_material():
     with engine.connect() as conn:
 
         result = conn.execute(
-    text("""
-        SELECT *
-        FROM product_material
-        ORDER BY seq
-    """)
-)
-        
+            text("""
+                SELECT *
+                FROM product_material
+                ORDER BY seq
+            """)
+        )
 
-        return [dict(r._mapping) for r in result]
+        return [
+            dict(row._mapping)
+            for row in result
+        ]
 
     except Exception as e:
 
