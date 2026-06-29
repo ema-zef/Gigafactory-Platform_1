@@ -11,6 +11,9 @@ from models import LoginRequest
 from models.simulation import SimulationRequest
 from uuid import uuid4
 import json
+import traceback
+traceback.print_exc()
+raise
 
 # ----------------------------------
 # App
@@ -756,6 +759,9 @@ def update_product_material(
     record: dict
 ):
 
+    # Prevent updating the primary key
+    record.pop("seq", None)
+
     set_clause = ", ".join(
         [f"{k}=:{k}" for k in record.keys()]
     )
@@ -763,7 +769,7 @@ def update_product_material(
     sql = f"""
         UPDATE product_material
         SET {set_clause}
-        WHERE id=:id
+        WHERE seq = :seq
     """
 
     with engine.begin() as conn:
@@ -772,14 +778,13 @@ def update_product_material(
             text(sql),
             {
                 **record,
-                "id": record_id
+                "seq": record_id
             }
         )
 
     return {
         "status": "updated"
     }
-
 
 # ----------------------------------
 # Product Material READ
@@ -788,22 +793,18 @@ def update_product_material(
 @app.get("/product_material")
 def get_product_material():
 
-    try:
+    with engine.connect() as conn:
 
-        with engine.connect() as conn:
+        result = conn.execute(
+    text("""
+        SELECT *
+        FROM product_material
+        ORDER BY seq
+    """)
+)
+        
 
-            result = conn.execute(
-                text("""
-                    SELECT *
-                    FROM product_material
-                    ORDER BY id
-                """)
-            )
-
-            return [
-                dict(row._mapping)
-                for row in result
-            ]
+        return [dict(r._mapping) for r in result]
 
     except Exception as e:
 
@@ -837,11 +838,13 @@ def get_product_material_options():
                 for row in result
             ]
 
-    except Exception as e:
+except Exception as e:
 
-        raise HTTPException(
-            status_code=500,
-            detail=str(e)
+    import traceback
+
+    traceback.print_exc()
+
+    raise
         )
 
 # ----------------------------------
@@ -849,18 +852,16 @@ def get_product_material_options():
 # ----------------------------------
 
 @app.delete("/product_material/{record_id}")
-def delete_product_material(
-    record_id: int
-):
+def delete_product_material(record_id: int):
 
     with engine.begin() as conn:
 
         conn.execute(
             text("""
                 DELETE FROM product_material
-                WHERE id=:id
+                WHERE seq = :seq
             """),
-            {"id": record_id}
+            {"seq": record_id}
         )
 
     return {
