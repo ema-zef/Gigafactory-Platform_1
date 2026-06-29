@@ -713,6 +713,217 @@ def check_product_configuration():
             "columns":
                 columns
         }
+
+# ----------------------------------
+# Product Material CREATE
+# ----------------------------------
+
+@app.post("/product_material")
+def create_product_material(record: dict):
+
+    columns = ", ".join(record.keys())
+
+    values = ", ".join(
+        [f":{k}" for k in record.keys()]
+    )
+
+    sql = f"""
+        INSERT INTO product_material
+        ({columns})
+        VALUES
+        ({values})
+    """
+
+    with engine.begin() as conn:
+
+        conn.execute(
+            text(sql),
+            record
+        )
+
+    return {
+        "status": "created"
+    }
+
+
+# ----------------------------------
+# Product Material UPDATE
+# ----------------------------------
+
+@app.put("/product_material/{record_id}")
+def update_product_material(
+    record_id: int,
+    record: dict
+):
+
+    set_clause = ", ".join(
+        [f"{k}=:{k}" for k in record.keys()]
+    )
+
+    sql = f"""
+        UPDATE product_material
+        SET {set_clause}
+        WHERE id=:id
+    """
+
+    with engine.begin() as conn:
+
+        conn.execute(
+            text(sql),
+            {
+                **record,
+                "id": record_id
+            }
+        )
+
+    return {
+        "status": "updated"
+    }
+
+
+# ----------------------------------
+# Product Material READ
+# ----------------------------------
+
+@app.get("/product_material")
+def get_product_material():
+
+    try:
+
+        with engine.connect() as conn:
+
+            result = conn.execute(
+                text("""
+                    SELECT *
+                    FROM product_material
+                    ORDER BY id
+                """)
+            )
+
+            return [
+                dict(row._mapping)
+                for row in result
+            ]
+
+    except Exception as e:
+
+        raise HTTPException(
+            status_code=500,
+            detail=str(e)
+        )
+
+# ----------------------------------
+# Product Material Options
+# ----------------------------------
+
+@app.get("/product_material/options")
+def get_product_material_options():
+
+    try:
+
+        with engine.connect() as conn:
+
+            result = conn.execute(
+                text("""
+                    SELECT DISTINCT productcode
+                    FROM product_material
+                    WHERE productcode IS NOT NULL
+                    ORDER BY productcode
+                """)
+            )
+
+            return [
+                row[0]
+                for row in result
+            ]
+
+    except Exception as e:
+
+        raise HTTPException(
+            status_code=500,
+            detail=str(e)
+        )
+
+# ----------------------------------
+# Product Material DELETE
+# ----------------------------------
+
+@app.delete("/product_material/{record_id}")
+def delete_product_material(
+    record_id: int
+):
+
+    with engine.begin() as conn:
+
+        conn.execute(
+            text("""
+                DELETE FROM product_material
+                WHERE id=:id
+            """),
+            {"id": record_id}
+        )
+
+    return {
+        "status": "deleted"
+    }
+
+# ----------------------------------
+# Product Material Schema
+# ----------------------------------
+
+@app.get("/product_material/schema")
+def product_material_schema():
+
+    with engine.connect() as conn:
+
+        result = conn.execute(
+            text("""
+                SELECT
+                    column_name,
+                    data_type
+                FROM information_schema.columns
+                WHERE table_name='product_material'
+                ORDER BY ordinal_position
+            """)
+        )
+
+        return [
+            dict(row._mapping)
+            for row in result
+        ]
+
+# ----------------------------------
+# Product Material Check
+# ----------------------------------
+
+@app.get("/product_material/check")
+def check_product_material():
+
+    with engine.connect() as conn:
+
+        result = conn.execute(
+            text("""
+                SELECT
+                    column_name,
+                    data_type
+                FROM information_schema.columns
+                WHERE table_name='product_material'
+                ORDER BY ordinal_position
+            """)
+        )
+
+        columns = [
+            dict(row._mapping)
+            for row in result
+        ]
+
+        return {
+            "table_exists":
+                len(columns) > 0,
+            "columns":
+                columns
+        }
+
 # ----------------------------------
 # Debug Production Configuration Columns
 # ----------------------------------
