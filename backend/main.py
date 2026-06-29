@@ -287,6 +287,7 @@ def login(credentials: LoginRequest):
         "token": token
     }
 
+
 # ----------------------------------
 # Existing plot endpoint
 # ----------------------------------
@@ -302,6 +303,7 @@ def get_dwelling_time():
         "x": solid_content.tolist(),
         "y": dwelling_time.tolist()
     }
+
 
 # ----------------------------------
 # PostgreSQL test
@@ -337,6 +339,8 @@ def db_test():
             status_code=500,
             detail=str(e)
         )
+
+
 # ----------------------------------
 # Equipment CREATE
 # ----------------------------------
@@ -367,6 +371,7 @@ def create_equipment(equipment: dict):
     return {
         "status": "created"
     }
+
 
 # ----------------------------------
 # Equipment Update
@@ -402,6 +407,7 @@ def update_equipment(
         "status": "updated"
     }
 
+
 # ----------------------------------
 # Equipment READ
 # ----------------------------------
@@ -419,6 +425,7 @@ def get_equipment():
             dict(row._mapping)
             for row in result
         ]
+
 
 # ----------------------------------
 # Equipment DELETE
@@ -440,6 +447,7 @@ def delete_equipment(equipment_id: int):
     return {
         "status": "deleted"
     }
+
 
 # ----------------------------------
 # Equipment Metadata
@@ -465,6 +473,7 @@ def equipment_schema():
             dict(row._mapping)
             for row in result
         ]
+
 
 # ----------------------------------
 # Equipment Check
@@ -504,6 +513,7 @@ def check_equipment_table():
             status_code=500,
             detail=str(e)
         )
+
 
 # ----------------------------------
 # Product Configuration CREATE
@@ -604,38 +614,6 @@ def get_product_configuration():
         )
 
 # ----------------------------------
-# Product Configuration Options
-# ----------------------------------
-
-@app.get("/product_configuration/options")
-def get_product_configuration_options():
-
-    try:
-
-        with engine.connect() as conn:
-
-            result = conn.execute(
-                text("""
-                    SELECT DISTINCT productcode
-                    FROM product_configuration
-                    WHERE productcode IS NOT NULL
-                    ORDER BY productcode
-                """)
-            )
-
-            return [
-                row[0]
-                for row in result
-            ]
-
-    except Exception as e:
-
-        raise HTTPException(
-            status_code=500,
-            detail=str(e)
-        )
-
-# ----------------------------------
 # Product Configuration DELETE
 # ----------------------------------
 
@@ -657,7 +635,6 @@ def delete_product_configuration(
     return {
         "status": "deleted"
     }
-
 
 # ----------------------------------
 # Product Configuration Schema
@@ -683,7 +660,6 @@ def product_configuration_schema():
             dict(row._mapping)
             for row in result
         ]
-
 
 # ----------------------------------
 # Product Configuration Check
@@ -718,6 +694,70 @@ def check_product_configuration():
         }
 
 # ----------------------------------
+# Product Configuration Options
+# ----------------------------------
+
+@app.get("/product_configuration/options")
+def get_product_configuration_options():
+
+    try:
+
+        with engine.connect() as conn:
+
+            result = conn.execute(
+                text("""
+                    SELECT DISTINCT productcode
+                    FROM product_configuration
+                    WHERE productcode IS NOT NULL
+                    ORDER BY productcode
+                """)
+            )
+
+            return [
+                row[0]
+                for row in result
+            ]
+
+    except Exception as e:
+
+        raise HTTPException(
+            status_code=500,
+            detail=str(e)
+        )
+
+# ----------------------------------
+# Product Configuration Options
+# ----------------------------------
+
+@app.get("/product_configuration/options")
+def get_product_configuration_options():
+
+    try:
+
+        with engine.connect() as conn:
+
+            result = conn.execute(
+                text("""
+                    SELECT DISTINCT productcode
+                    FROM product_configuration
+                    WHERE productcode IS NOT NULL
+                    ORDER BY productcode
+                """)
+            )
+
+            return [
+                row[0]
+                for row in result
+            ]
+
+    except Exception as e:
+
+        raise HTTPException(
+            status_code=500,
+            detail=str(e)
+        )
+
+# ----------------------------------
 # Product Material CREATE
 # ----------------------------------
 
@@ -747,6 +787,37 @@ def create_product_material(record: dict):
     return {
         "status": "created"
     }
+
+# ----------------------------------
+# Product Material READ
+# ----------------------------------
+
+@app.get("/product_material")
+def get_product_material():
+
+    try:
+
+        with engine.connect() as conn:
+
+            result = conn.execute(
+                text("""
+                    SELECT *
+                    FROM product_material
+                    ORDER BY seq
+                """)
+            )
+
+            return [
+                dict(row._mapping)
+                for row in result
+            ]
+
+    except Exception as e:
+
+        raise HTTPException(
+            status_code=500,
+            detail=str(e)
+        )
 
 
 # ----------------------------------
@@ -786,71 +857,6 @@ def update_product_material(
         "status": "updated"
     }
 
-# ----------------------------------
-# Product Material READ
-# ----------------------------------
-
-@app.get("/product_material")
-def get_product_material():
-
-    try:
-
-        with engine.connect() as conn:
-
-            result = conn.execute(
-                text("""
-                    SELECT *
-                    FROM product_material
-                    ORDER BY seq
-                """)
-            )
-
-            return [
-                dict(row._mapping)
-                for row in result
-            ]
-
-    except Exception as e:
-
-        raise HTTPException(
-            status_code=500,
-            detail=str(e)
-        )
-
-# ----------------------------------
-# Product Material Options
-# ----------------------------------
-
-@app.get("/product_material/options")
-def get_product_material_options():
-
-    try:
-
-        with engine.connect() as conn:
-
-            result = conn.execute(
-                text("""
-                    SELECT DISTINCT productcode
-                    FROM product_material
-                    WHERE productcode IS NOT NULL
-                    ORDER BY productcode
-                """)
-            )
-
-            return [
-                row[0]
-                for row in result
-            ]
-
-    except Exception as e:
-
-        import traceback
-        traceback.print_exc()
-
-        raise HTTPException(
-            status_code=500,
-            detail=str(e)
-        )
 
 # ----------------------------------
 # Product Material DELETE
@@ -929,6 +935,41 @@ def check_product_material():
             "columns":
                 columns
         }
+
+# ----------------------------------
+# Product Material Options
+# ----------------------------------
+
+@app.get("/product_material/options")
+def get_product_material_options():
+
+    try:
+
+        with engine.connect() as conn:
+
+            result = conn.execute(
+                text("""
+                    SELECT DISTINCT productcode
+                    FROM product_material
+                    WHERE productcode IS NOT NULL
+                    ORDER BY productcode
+                """)
+            )
+
+            return [
+                row[0]
+                for row in result
+            ]
+
+    except Exception as e:
+
+        import traceback
+        traceback.print_exc()
+
+        raise HTTPException(
+            status_code=500,
+            detail=str(e)
+        )
 
 # ----------------------------------
 # Debug Production Configuration Columns
