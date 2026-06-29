@@ -793,20 +793,22 @@ def update_product_material(
 @app.get("/product_material")
 def get_product_material():
 
-    with engine.connect() as conn:
+    try:
 
-        result = conn.execute(
-            text("""
-                SELECT *
-                FROM product_material
-                ORDER BY seq
-            """)
-        )
+        with engine.connect() as conn:
 
-        return [
-            dict(row._mapping)
-            for row in result
-        ]
+            result = conn.execute(
+                text("""
+                    SELECT *
+                    FROM product_material
+                    ORDER BY seq
+                """)
+            )
+
+            return [
+                dict(row._mapping)
+                for row in result
+            ]
 
     except Exception as e:
 
@@ -840,13 +842,15 @@ def get_product_material_options():
                 for row in result
             ]
 
-except Exception as e:
+    except Exception as e:
 
-    import traceback
+        import traceback
+        traceback.print_exc()
 
-    traceback.print_exc()
-
-    raise
+        raise HTTPException(
+            status_code=500,
+            detail=str(e)
+        )
 
 # ----------------------------------
 # Product Material DELETE
