@@ -371,6 +371,23 @@ def create_equipment(equipment: dict):
         "status": "created"
     }
 
+# ----------------------------------
+# Equipment READ
+# ----------------------------------
+
+@app.get("/equipment")
+def get_equipment():
+
+    with engine.connect() as conn:
+
+        result = conn.execute(
+            text("SELECT * FROM equipment ORDER BY id")
+        )
+
+        return [
+            dict(row._mapping)
+            for row in result
+        ]
 
 # ----------------------------------
 # Equipment Update
@@ -405,26 +422,6 @@ def update_equipment(
     return {
         "status": "updated"
     }
-
-
-# ----------------------------------
-# Equipment READ
-# ----------------------------------
-
-@app.get("/equipment")
-def get_equipment():
-
-    with engine.connect() as conn:
-
-        result = conn.execute(
-            text("SELECT * FROM equipment ORDER BY id")
-        )
-
-        return [
-            dict(row._mapping)
-            for row in result
-        ]
-
 
 # ----------------------------------
 # Equipment DELETE
@@ -513,6 +510,22 @@ def check_equipment_table():
             detail=str(e)
         )
 
+# ----------------------------------
+# Equipment options
+# ----------------------------------
+
+@app.get("/equipment/options")
+def equipment_options():
+
+    with engine.connect() as conn:
+
+        result = conn.execute(text("""
+            SELECT equipmentname
+            FROM equipment
+            ORDER BY equipmentname
+        """))
+
+        return [r[0] for r in result]
 
 # ----------------------------------
 # Product Configuration CREATE
