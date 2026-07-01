@@ -519,13 +519,20 @@ def equipment_options():
 
     with engine.connect() as conn:
 
-        result = conn.execute(text("""
-            SELECT equipmentname
-            FROM equipment
-            ORDER BY equipmentname
-        """))
+        result = conn.execute(
+            text("""
+                SELECT
+                    technology_name,
+                    process
+                FROM equipment
+                ORDER BY technology_name
+            """)
+        )
 
-        return [r[0] for r in result]
+        return [
+            dict(row._mapping)
+            for row in result
+        ]
 
 # ----------------------------------
 # Product Configuration CREATE
