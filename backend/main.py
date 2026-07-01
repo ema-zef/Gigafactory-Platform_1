@@ -522,7 +522,7 @@ def equipment_options():
         result = conn.execute(
             text("""
                 SELECT
-                    seq,
+                    id,
                     technology_name,
                     process,
                     quality_rate
