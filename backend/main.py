@@ -514,27 +514,40 @@ def check_equipment_table():
 # Equipment options
 # ----------------------------------
 
+# ----------------------------------
+# Equipment Options
+# ----------------------------------
+
 @app.get("/equipment/options")
 def equipment_options():
 
-    with engine.connect() as conn:
+    try:
 
-        result = conn.execute(
-            text("""
-                SELECT
-                    id,
-                    technology_name,
-                    process,
-                    quality_rate
-                FROM equipment
-                ORDER BY technology_name
-            """)
+        with engine.connect() as conn:
+
+            result = conn.execute(
+                text("""
+                    SELECT
+                        id,
+                        technology_name,
+                        process,
+                        quality_rate
+                    FROM equipment
+                    ORDER BY technology_name
+                """)
+            )
+
+            return [
+                dict(row._mapping)
+                for row in result
+            ]
+
+    except Exception as e:
+
+        raise HTTPException(
+            status_code=500,
+            detail=str(e)
         )
-
-        return [
-            dict(row._mapping)
-            for row in result
-        ]
 
 # ----------------------------------
 # Product Configuration CREATE
