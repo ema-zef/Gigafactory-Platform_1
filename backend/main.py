@@ -523,7 +523,8 @@ def equipment_options():
             text("""
                 SELECT
                     technology_name,
-                    process
+                    process,
+                    quality_rate
                 FROM equipment
                 ORDER BY technology_name
             """)
