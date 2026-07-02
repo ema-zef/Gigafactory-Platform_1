@@ -10,6 +10,15 @@ import requests
 from models import LoginRequest
 from models.simulation import SimulationRequest
 from uuid import uuid4
+from simulation_engine import (
+
+    cells_per_day,
+
+    cells_per_year,
+
+    calculate_process
+
+)
 import json
 import traceback
 
@@ -509,10 +518,6 @@ def check_equipment_table():
             status_code=500,
             detail=str(e)
         )
-
-# ----------------------------------
-# Equipment options
-# ----------------------------------
 
 # ----------------------------------
 # Equipment Options
@@ -1348,6 +1353,297 @@ def simulate(data: SimulationRequest):
         "simulation":
             simulation
     }
+
+# ============================================================
+# Manufacturing Route Simulation
+# ============================================================
+
+@app.post("/simulation/run")
+def run_simulation(request: dict):
+
+    try:
+
+        plant_code = request["plant_code"]
+        product_code = request["product_code"]
+        route = request["route"]
+
+        with engine.connect() as conn:
+
+            # --------------------------------------------------
+            # Production Configuration
+            # --------------------------------------------------
+
+            production = conn.execute(
+
+                text("""
+
+                    SELECT
+
+                        annual_output_gwh
+
+                    FROM production_configuration
+
+                    WHERE plant_code = :plant
+
+                    LIMIT 1
+
+                """),
+
+                {
+                    "plant": plant_code
+                }
+
+            ).mappings().first()
+
+            if production is None:
+
+                raise HTTPException(
+
+                    status_code=404,
+
+                    detail="Production configuration not found."
+
+                )
+
+            # --------------------------------------------------
+            # Product Configuration
+            # --------------------------------------------------
+
+            product = conn.execute(
+
+                text("""
+
+                    SELECT *
+
+                    FROM product_configuration
+
+                    WHERE product_code = :product
+
+                    LIMIT 1
+
+                """),
+
+                {
+                    "product": product_code
+                }
+
+            ).mappings().first()
+
+            if product is None:
+
+                raise HTTPException(
+
+                    status_code=404,
+
+                    detail="Product configuration not found."
+
+                )
+
+            # --------------------------------------------------
+            # Finished Cell Demand
+            # --------------------------------------------------
+
+            annual_output = float(
+                production["annual_output_gwh"]
+            )
+
+            cell_capacity = float(
+                product["cell_capacity_kwh"]
+            )
+
+            finished_cells_day = cells_per_day(
+
+                annual_output,
+
+                cell_capacity
+
+            )
+
+            finished_cells_year = cells_per_year(
+
+                annual_output,
+
+                cell_capacity
+
+            )
+
+            required_cells = finished_cells_day
+
+            simulation = []
+
+            # --------------------------------------------------
+            # Walk backwards through selected route
+            # --------------------------------------------------
+
+            for step in reversed(route):
+
+                equipment = conn.execute(
+
+                    text("""
+
+                        SELECT
+
+                            id,
+
+                            technology_name,
+
+                            process,
+
+                            process_category,
+
+                            quality_rate
+
+                        FROM equipment
+
+                        WHERE id = :id
+
+                    """),
+
+                    {
+                        "id": step["technology_id"]
+                    }
+
+                ).mappings().first()
+
+                if equipment is None:
+
+                    raise HTTPException(
+
+                        status_code=404,
+
+                        detail=f"Equipment {step['technology_id']} not found."
+
+                    )
+
+                result = calculate_process(
+
+                    category=equipment["process_category"],
+
+                    cells=required_cells,
+
+                    product=product,
+
+                    quality=equipment["quality_rate"]
+
+                )
+
+                simulation.append(
+
+                    {
+
+                        "technology_id":
+
+                            equipment["id"],
+
+                        "technology_name":
+
+                            equipment["technology_name"],
+
+                        "process":
+
+                            equipment["process"],
+
+                        "process_category":
+
+                            equipment["process_category"],
+
+                        "quality_rate":
+
+                            round(
+
+                                float(equipment["quality_rate"]),
+
+                                2
+
+                            ),
+
+                        "unit":
+
+                            result["unit"],
+
+                        "required_output":
+
+                            round(
+
+                                result["output"],
+
+                                2
+
+                            ),
+
+                        "required_input":
+
+                            round(
+
+                                result["input"],
+
+                                2
+
+                            )
+
+                    }
+
+                )
+
+                required_cells = result["next_cells"]
+
+            simulation.reverse()
+
+            return {
+
+                "status": "success",
+
+                "plant_code": plant_code,
+
+                "product_code": product_code,
+
+                "annual_output_gwh": annual_output,
+
+                "cell_capacity_kwh": cell_capacity,
+
+                "finished_cells_per_day":
+
+                    round(
+
+                        finished_cells_day,
+
+                        2
+
+                    ),
+
+                "finished_cells_per_year":
+
+                    round(
+
+                        finished_cells_year,
+
+                        2
+
+                    ),
+
+                "simulation":
+
+                    simulation
+
+            }
+
+    except HTTPException:
+
+        raise
+
+    except Exception as e:
+
+        import traceback
+
+        traceback.print_exc()
+
+        raise HTTPException(
+
+            status_code=500,
+
+            detail=str(e)
+
+        )
 
 # ----------------------------------
 # Root endpoint
