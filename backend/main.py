@@ -1281,77 +1281,156 @@ def fuseki_test():
             status_code=500,
             detail=str(e)
         )
-# ----------------------------------
-# Temporary Simulation endpoint
-# ----------------------------------
 
-@app.post("/simulate")
-def simulate(data: SimulationRequest):
+# ----------------------------------------------------------
+# ROUTE SIMULATION
+# ----------------------------------------------------------
+
+@app.post("/simulation/run")
+def run_simulation(request: dict):
+
+    plant = request["plant_code"]
+    product_code = request["product_code"]
+    route = request["route"]
 
     with engine.connect() as conn:
 
-        result = conn.execute(
+        # -------------------------
+        # Production Configuration
+        # -------------------------
+
+        prod = conn.execute(
+
             text("""
-                SELECT *
-                FROM process_steps
-                WHERE product_code=:product
-                ORDER BY step_order DESC
+
+                SELECT annual_output
+
+                FROM production_configuration
+
+                WHERE plant_code=:plant
+                  AND product_code=:product
+
             """),
+
             {
-                "product": data.product_code
+                "plant": plant,
+                "product": product_code
             }
-        )
 
-        steps = [
-            dict(row._mapping)
-            for row in result
-        ]
+        ).mappings().first()
 
-    required_output = data.target_output
+        if prod is None:
+
+            raise HTTPException(
+                status_code=404,
+                detail="Production configuration not found."
+            )
+
+        # -------------------------
+        # Product Configuration
+        # -------------------------
+
+        product = conn.execute(
+
+            text("""
+
+                SELECT *
+
+                FROM product_configuration
+
+                WHERE product_code=:product
+
+            """),
+
+            {
+                "product": product_code
+            }
+
+        ).mappings().first()
+
+        if product is None:
+
+            raise HTTPException(
+                status_code=404,
+                detail="Product configuration not found."
+            )
+
+    # ---------------------------------------------
+    # Annual output (GWh/year)
+    # ---------------------------------------------
+
+    annual_output = float(prod["annual_output"])
+
+    annual_energy_kwh = annual_output * 1_000_000
+
+    cells_year = annual_energy_kwh / product["cell_capacity_kwh"]
+
+    required_cells = cells_year / 365
 
     simulation = []
 
-    for step in steps:
+    # ---------------------------------------------
+    # Backwards through the route
+    # ---------------------------------------------
 
-        quality_rate = float(
-            step["quality_rate"]
-        )
+    for equipment in reversed(route):
 
-        input_required = (
-            required_output / quality_rate
+        result = calculate_process(
+
+            process_category=equipment["process_category"],
+
+            required_cells=required_cells,
+
+            product=product,
+
+            quality_rate=float(equipment["quality_rate"])
+
         )
 
         simulation.append({
 
-            "process_name":
-                step["process_name"],
+            "technology_id":
+                equipment["id"],
 
-            "required_output":
-                round(required_output, 2),
+            "technology_name":
+                equipment["technology_name"],
 
-            "required_input":
-                round(input_required, 2),
+            "process":
+                equipment["process"],
+
+            "process_category":
+                equipment["process_category"],
 
             "quality_rate":
-                quality_rate
+                equipment["quality_rate"],
+
+            "unit":
+                result["unit"],
+
+            "required_output":
+                round(result["output"], 2),
+
+            "required_input":
+                round(result["input"], 2)
+
         })
 
-        required_output = input_required
+        required_cells = result["next_cells"]
 
     simulation.reverse()
 
     return {
-        "plant_code":
-            data.plant_code,
 
-        "product_code":
-            data.product_code,
+        "plant_code": plant,
 
-        "target_output":
-            data.target_output,
+        "product_code": product_code,
 
-        "simulation":
-            simulation
+        "annual_output_gwh": annual_output,
+
+        "cells_per_day": round(cells_year / 365, 2),
+
+        "simulation": simulation
+
     }
 
 # ============================================================
