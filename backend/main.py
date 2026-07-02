@@ -1282,447 +1282,230 @@ def fuseki_test():
             detail=str(e)
         )
 
-# ----------------------------------------------------------
+# -------------------------------------------------------
 # ROUTE SIMULATION
-# ----------------------------------------------------------
+# -------------------------------------------------------
 
 @app.post("/simulation/run")
 def run_simulation(request: dict):
 
-    plant = request["plant_code"]
     product_code = request["product_code"]
+    plant_code = request["plant_code"]
     route = request["route"]
 
     with engine.connect() as conn:
 
         # -------------------------
-        # Production Configuration
-        # -------------------------
-
-        prod = conn.execute(
-
-            text("""
-
-                SELECT annual_output
-
-                FROM production_configuration
-
-                WHERE plant_code=:plant
-                  AND product_code=:product
-
-            """),
-
-            {
-                "plant": plant,
-                "product": product_code
-            }
-
-        ).mappings().first()
-
-        if prod is None:
-
-            raise HTTPException(
-                status_code=404,
-                detail="Production configuration not found."
-            )
-
-        # -------------------------
-        # Product Configuration
+        # Product configuration
         # -------------------------
 
         product = conn.execute(
-
             text("""
-
                 SELECT *
-
                 FROM product_configuration
-
-                WHERE product_code=:product
-
+                WHERE productcode = :product
             """),
-
-            {
-                "product": product_code
-            }
-
+            {"product": product_code}
         ).mappings().first()
 
-        if product is None:
+        if not product:
 
             raise HTTPException(
                 status_code=404,
                 detail="Product configuration not found."
             )
 
-    # ---------------------------------------------
-    # Annual output (GWh/year)
-    # ---------------------------------------------
+        # -------------------------
+        # Production configuration
+        # -------------------------
 
-    annual_output = float(prod["annual_output"])
+        production = conn.execute(
+            text("""
+                SELECT annual_output
+                FROM production_configuration
+                WHERE plant_code = :plant
+                AND product_code = :product
+            """),
+            {
+                "plant": plant_code,
+                "product": product_code
+            }
+        ).mappings().first()
 
-    annual_energy_kwh = annual_output * 1_000_000
+        if not production:
 
-    cells_year = annual_energy_kwh / product["cell_capacity_kwh"]
+            raise HTTPException(
+                status_code=404,
+                detail="Production configuration not found."
+            )
 
-    required_cells = cells_year / 365
+    # ---------------------------------------------------
+    # Calculate required good cells/day
+    # ---------------------------------------------------
+
+    annual_output_gwh = float(production["annual_output"])
+    cell_capacity = float(product["cell_capacity_kwh"])
+
+    annual_energy_kwh = annual_output_gwh * 1_000_000
+
+    required_good_cells_year = annual_energy_kwh / cell_capacity
+    required_good_cells_day = required_good_cells_year / 365
+
+    required_cells = required_good_cells_day
 
     simulation = []
 
-    # ---------------------------------------------
-    # Backwards through the route
-    # ---------------------------------------------
+    # ---------------------------------------------------
+    # Backward calculation
+    # ---------------------------------------------------
 
     for equipment in reversed(route):
 
-        result = calculate_process(
+        quality = float(equipment["quality_rate"]) / 100
 
-            process_category=equipment["process_category"],
+        required_input_cells = required_cells / quality
 
-            required_cells=required_cells,
+        category = equipment["process_category"]
 
-            product=product,
+        # ---------------------------------------------
+        # CELL PROCESS
+        # ---------------------------------------------
 
-            quality_rate=float(equipment["quality_rate"])
+        if category == "CELL":
 
-        )
+            output = required_cells
+            input_required = required_input_cells
+            unit = "cells/day"
+
+        # ---------------------------------------------
+        # CATHODE ROLL
+        # ---------------------------------------------
+
+        elif category == "CATHODE_ROLL":
+
+            output = (
+                required_cells
+                * product["number_of_electrodes_in_cell"]
+                * product["cathode_length_mm"]
+                / 1000
+            )
+
+            output = output / quality
+
+            input_required = output
+
+            unit = "m/day"
+
+        # ---------------------------------------------
+        # ANODE ROLL
+        # ---------------------------------------------
+
+        elif category == "ANODE_ROLL":
+
+            output = (
+                required_cells
+                * product["number_of_electrodes_in_cell"]
+                * product["anode_length_mm"]
+                / 1000
+            )
+
+            output = output / quality
+
+            input_required = output
+
+            unit = "m/day"
+
+        # ---------------------------------------------
+        # CATHODE MASS
+        # ---------------------------------------------
+
+        elif category == "CATHODE_MASS":
+
+            roll_length = (
+                required_cells
+                * product["number_of_electrodes_in_cell"]
+                * product["cathode_length_mm"]
+                / 1000
+            )
+
+            output = (
+                roll_length
+                * product["cath_coll_width_m"]
+                * product["mass_load_cath_kg_m2"]
+            )
+
+            output = output / quality
+
+            input_required = output
+
+            unit = "kg/day"
+
+        # ---------------------------------------------
+        # ANODE MASS
+        # ---------------------------------------------
+
+        elif category == "ANODE_MASS":
+
+            roll_length = (
+                required_cells
+                * product["number_of_electrodes_in_cell"]
+                * product["anode_length_mm"]
+                / 1000
+            )
+
+            output = (
+                roll_length
+                * product["anode_coll_width_m"]
+                * product["mass_load_anode_kg_m2"]
+            )
+
+            output = output / quality
+
+            input_required = output
+
+            unit = "kg/day"
+
+        else:
+
+            output = required_cells
+            input_required = required_input_cells
+            unit = "units/day"
 
         simulation.append({
 
-            "technology_id":
-                equipment["id"],
+            "technology_id": equipment["technology_id"],
 
-            "technology_name":
-                equipment["technology_name"],
+            "technology_name": equipment["technology_name"],
 
-            "process":
-                equipment["process"],
+            "process": equipment["process"],
 
-            "process_category":
-                equipment["process_category"],
+            "category": category,
 
-            "quality_rate":
-                equipment["quality_rate"],
+            "quality_rate": equipment["quality_rate"],
 
-            "unit":
-                result["unit"],
+            "unit": unit,
 
-            "required_output":
-                round(result["output"], 2),
+            "required_output": round(output, 2),
 
-            "required_input":
-                round(result["input"], 2)
+            "required_input": round(input_required, 2)
 
         })
 
-        required_cells = result["next_cells"]
+        required_cells = required_input_cells
 
     simulation.reverse()
 
     return {
 
-        "plant_code": plant,
+        "plant_code": plant_code,
 
         "product_code": product_code,
 
-        "annual_output_gwh": annual_output,
-
-        "cells_per_day": round(cells_year / 365, 2),
+        "required_good_cells_day": round(required_good_cells_day, 2),
 
         "simulation": simulation
 
     }
-
-# ============================================================
-# Manufacturing Route Simulation
-# ============================================================
-
-@app.post("/simulation/run")
-def run_simulation(request: dict):
-
-    try:
-
-        plant_code = request["plant_code"]
-        product_code = request["product_code"]
-        route = request["route"]
-
-        with engine.connect() as conn:
-
-            # --------------------------------------------------
-            # Production Configuration
-            # --------------------------------------------------
-
-            production = conn.execute(
-
-                text("""
-
-                    SELECT
-
-                        annual_output_gwh
-
-                    FROM production_configuration
-
-                    WHERE plant_code = :plant
-
-                    LIMIT 1
-
-                """),
-
-                {
-                    "plant": plant_code
-                }
-
-            ).mappings().first()
-
-            if production is None:
-
-                raise HTTPException(
-
-                    status_code=404,
-
-                    detail="Production configuration not found."
-
-                )
-
-            # --------------------------------------------------
-            # Product Configuration
-            # --------------------------------------------------
-
-            product = conn.execute(
-
-                text("""
-
-                    SELECT *
-
-                    FROM product_configuration
-
-                    WHERE product_code = :product
-
-                    LIMIT 1
-
-                """),
-
-                {
-                    "product": product_code
-                }
-
-            ).mappings().first()
-
-            if product is None:
-
-                raise HTTPException(
-
-                    status_code=404,
-
-                    detail="Product configuration not found."
-
-                )
-
-            # --------------------------------------------------
-            # Finished Cell Demand
-            # --------------------------------------------------
-
-            annual_output = float(
-                production["annual_output_gwh"]
-            )
-
-            cell_capacity = float(
-                product["cell_capacity_kwh"]
-            )
-
-            finished_cells_day = cells_per_day(
-
-                annual_output,
-
-                cell_capacity
-
-            )
-
-            finished_cells_year = cells_per_year(
-
-                annual_output,
-
-                cell_capacity
-
-            )
-
-            required_cells = finished_cells_day
-
-            simulation = []
-
-            # --------------------------------------------------
-            # Walk backwards through selected route
-            # --------------------------------------------------
-
-            for step in reversed(route):
-
-                equipment = conn.execute(
-
-                    text("""
-
-                        SELECT
-
-                            id,
-
-                            technology_name,
-
-                            process,
-
-                            process_category,
-
-                            quality_rate
-
-                        FROM equipment
-
-                        WHERE id = :id
-
-                    """),
-
-                    {
-                        "id": step["technology_id"]
-                    }
-
-                ).mappings().first()
-
-                if equipment is None:
-
-                    raise HTTPException(
-
-                        status_code=404,
-
-                        detail=f"Equipment {step['technology_id']} not found."
-
-                    )
-
-                result = calculate_process(
-
-                    category=equipment["process_category"],
-
-                    cells=required_cells,
-
-                    product=product,
-
-                    quality=equipment["quality_rate"]
-
-                )
-
-                simulation.append(
-
-                    {
-
-                        "technology_id":
-
-                            equipment["id"],
-
-                        "technology_name":
-
-                            equipment["technology_name"],
-
-                        "process":
-
-                            equipment["process"],
-
-                        "process_category":
-
-                            equipment["process_category"],
-
-                        "quality_rate":
-
-                            round(
-
-                                float(equipment["quality_rate"]),
-
-                                2
-
-                            ),
-
-                        "unit":
-
-                            result["unit"],
-
-                        "required_output":
-
-                            round(
-
-                                result["output"],
-
-                                2
-
-                            ),
-
-                        "required_input":
-
-                            round(
-
-                                result["input"],
-
-                                2
-
-                            )
-
-                    }
-
-                )
-
-                required_cells = result["next_cells"]
-
-            simulation.reverse()
-
-            return {
-
-                "status": "success",
-
-                "plant_code": plant_code,
-
-                "product_code": product_code,
-
-                "annual_output_gwh": annual_output,
-
-                "cell_capacity_kwh": cell_capacity,
-
-                "finished_cells_per_day":
-
-                    round(
-
-                        finished_cells_day,
-
-                        2
-
-                    ),
-
-                "finished_cells_per_year":
-
-                    round(
-
-                        finished_cells_year,
-
-                        2
-
-                    ),
-
-                "simulation":
-
-                    simulation
-
-            }
-
-    except HTTPException:
-
-        raise
-
-    except Exception as e:
-
-        import traceback
-
-        traceback.print_exc()
-
-        raise HTTPException(
-
-            status_code=500,
-
-            detail=str(e)
-
-        )
 
 # ----------------------------------
 # Root endpoint
