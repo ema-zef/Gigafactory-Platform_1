@@ -180,14 +180,15 @@ def roll_to_cells(
         )
 
     )
-if category=="CELL":
+if process_category == "cell":
+    pass
 
-...
+elif process_category == "roll":
+    pass
 
-elif category=="CATHODE_ROLL":
-
-...
-
+elif process_category == "mass":
+    pass
+    
 elif category=="ANODE_ROLL":
 def calculate_process(
 
