@@ -536,6 +536,7 @@ def equipment_options():
                         id,
                         technology_name,
                         process,
+                        process_category,
                         quality_rate
                     FROM equipment
                     ORDER BY technology_name
