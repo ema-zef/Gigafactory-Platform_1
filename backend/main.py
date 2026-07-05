@@ -1291,7 +1291,15 @@ def run_simulation(request: dict):
 
     product_code = request["product_code"]
     plant_code = request["plant_code"]
-    route = request["route"]
+    cathode_route = request.get("cathode_route", [])
+    anode_route = request.get("anode_route", [])
+    assembly_route = request.get("assembly_route", [])
+
+    route = (
+        cathode_route +
+        anode_route +
+        assembly_route
+    )
 
     with engine.connect() as conn:
 
