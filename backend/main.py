@@ -1334,7 +1334,7 @@ def run_simulation(request: dict):
                 SELECT annual_output_kwh
                 FROM production_configuration
                 WHERE plant_code = :plant
-                AND product_code = :product
+                
             """),
             {
                 "plant": plant_code,
