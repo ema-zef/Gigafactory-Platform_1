@@ -1331,7 +1331,7 @@ def run_simulation(request: dict):
 
         production = conn.execute(
             text("""
-                SELECT annual_output
+                SELECT annual_output_kwh
                 FROM production_configuration
                 WHERE plant_code = :plant
                 AND product_code = :product
@@ -1353,7 +1353,7 @@ def run_simulation(request: dict):
     # Calculate required good cells/day
     # ---------------------------------------------------
 
-    annual_output_gwh = float(production["annual_output"])
+    annual_output_gwh = float(production["annual_output_kwh"])
     cell_capacity = float(product["cell_capacity_kwh"])
 
     annual_energy_kwh = annual_output_gwh * 1_000_000
