@@ -537,18 +537,19 @@ def equipment_options():
                         technology_name,
                         process,
                         process_category,
-                        quality_rateprocess:
+                        quality_rate
                     FROM equipment
                     ORDER BY technology_name
                 """)
             )
 
-            return [
-                dict(row._mapping)
-                for row in result
-            ]
+            return [dict(row._mapping) for row in result]
 
     except Exception as e:
+
+        import traceback
+
+        print(traceback.format_exc())
 
         raise HTTPException(
             status_code=500,
