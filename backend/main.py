@@ -1326,39 +1326,38 @@ def run_simulation(request: dict):
         # -------------------------
 
         production = conn.execute(
-    text("""
-        SELECT annual_output_kwh
-        FROM production_configuration
-        WHERE code = :plant
-    """),
-    {
-        "plant": plant_code
-    }
-).mappings().first()
+            text("""
+                SELECT annual_output_kwh
+                FROM production_configuration
+                WHERE code = :plant
+            """),
+            {
+                "plant": plant_code
+            }
+        ).mappings().first()
 
-print("Plant received:", plant_code)
-print("Product received:", product_code)
-print("Production row:", production)
+        print("Plant received:", plant_code)
+        print("Product received:", product_code)
+        print("Production row:", production)
 
-if production is None:
-    raise HTTPException(
-        status_code=404,
-        detail=f"No production configuration found for plant {plant_code}"
-    )
+        if production is None:
+            raise HTTPException(
+                status_code=404,
+                detail=f"No production configuration found for plant {plant_code}"
+            )
 
-if production["annual_output_kwh"] is None:
-    raise HTTPException(
-        status_code=400,
-        detail="annual_output_kwh is NULL."
-    )
+        if production["annual_output_kwh"] is None:
+            raise HTTPException(
+                status_code=400,
+                detail="annual_output_kwh is NULL."
+            )
 
-annual_output_kwh = float(production["annual_output_kwh"])
+        annual_output_gwh = float(production["annual_output_kwh"])
 
     # ---------------------------------------------------
     # Calculate required good cells/day
     # ---------------------------------------------------
 
-    annual_output_gwh = float(production["annual_output_kwh"])
     cell_capacity = float(product["cell_capacity_kwh"])
 
     annual_energy_kwh = annual_output_gwh * 1_000_000
