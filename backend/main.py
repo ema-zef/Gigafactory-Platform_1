@@ -150,10 +150,6 @@ def save_simulation(session_id: str):
 # Deployment verification
 # ----------------------------------
 
-# ----------------------------------
-# Deployment verification
-# ----------------------------------
-
 @app.get("/version")
 def version():
     return {
@@ -1334,20 +1330,25 @@ def run_simulation(request: dict):
                 SELECT annual_output_kwh
                 FROM production_configuration
                 WHERE code = :plant
-                
-            """),
-            {
-                "plant": plant_code,
-                "product": product_code
-            }
-        ).mappings().first()
+           """),
+           {
+               "plant": plant_code
+           }
+      ).mappings().first()
+      
+      print("Production row:", production)
 
-        if not production:
-
+        if production is None:
             raise HTTPException(
                 status_code=404,
-                detail="Production configuration not found."
+                detail=f"No production configuration found for plant {plant_code}"
             )
+
+        if production["annual_output_kwh"] is None:
+            raise HTTPException(
+                status_code=400,
+                detail="annual_output_kwh is NULL in production_configuration."
+           )
 
     # ---------------------------------------------------
     # Calculate required good cells/day
