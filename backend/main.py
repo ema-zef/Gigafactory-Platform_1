@@ -515,44 +515,6 @@ def check_equipment_table():
             detail=str(e)
         )
 
-# ----------------------------------
-# Equipment Options
-# ----------------------------------
-
-@app.get("/equipment/options")
-def equipment_options():
-
-    try:
-
-        with engine.connect() as conn:
-
-            result = conn.execute(
-                text(
-                    """
-                    SELECT
-                        column_name
-                    FROM information_schema.columns
-                    WHERE table_name = 'equipment'
-                    ORDER BY ordinal_position
-                    """
-                )
-            )
-
-            return {
-                "table_exists": True,
-                "columns": [dict(row._mapping) for row in result]
-            }
-
-    except Exception as e:
-
-        import traceback
-
-        print(traceback.format_exc())
-
-        raise HTTPException(
-            status_code=500,
-            detail=str(e)
-        )
 
 # ----------------------------------
 # Product Configuration CREATE
