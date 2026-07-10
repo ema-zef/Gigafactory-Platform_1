@@ -47,6 +47,8 @@ export default function ProductionConfigurationTable({
 
   return (
 
+<div className="table-wrapper">
+
     <table border="1">
 
       <thead>
@@ -55,7 +57,7 @@ export default function ProductionConfigurationTable({
 
           <th>ID</th>
 
-          {columns.map((col) => (
+          {(columns  ?? []).map((col) => (
 
             <th key={col.column_name}>
               {col.column_name}
@@ -77,7 +79,7 @@ export default function ProductionConfigurationTable({
 
             <td>{row.id}</td>
 
-            {columns.map((col) => (
+            {(columns  ?? []).map((col) => (
 
               <td
                 key={col.column_name}
@@ -151,5 +153,6 @@ export default function ProductionConfigurationTable({
       </tbody>
 
     </table>
+</div>
   );
 }

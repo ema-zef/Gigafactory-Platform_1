@@ -1,0 +1,101 @@
+.form-card {
+    background: white;
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    margin-bottom: 30px;
+}
+
+.form-title {
+    font-size: 22px;
+    font-weight: 600;
+    color: #173b73;
+    margin-bottom: 25px;
+    text-align: center;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px,1fr));
+    gap: 20px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-group label {
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: #374151;
+}
+
+.form-group input,
+.form-group select {
+    padding: 10px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    font-size: 14px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.form-actions {
+    display: flex;
+    justify-content: center;
+    margin-top: 30px;
+}
+
+.primary-button {
+    background: #2563eb;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 14px 35px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.primary-button:hover {
+    background: #1d4ed8;
+}
+
+.table-wrapper{
+    width:100%;
+    overflow-x:auto;
+    overflow-y:hidden;
+    border:1px solid #d1d5db;
+    border-radius:10px;
+    background:white;
+    margin-top:20px;
+}
+
+.table-wrapper table{
+    min-width:max-content;
+    width:100%;
+    border-collapse:collapse;
+}
+
+.table-wrapper::-webkit-scrollbar{
+    height:12px;
+}
+
+.table-wrapper::-webkit-scrollbar-thumb{
+    background:#9ca3af;
+    border-radius:6px;
+}
+
+.table-wrapper::-webkit-scrollbar-track{
+    background:#f3f4f6;
+}
+
+.table-wrapper table thead th{
+    position: sticky;
+    top: 0;
+    background: #173b73;
+    color: white;
+    z-index: 2;
+}

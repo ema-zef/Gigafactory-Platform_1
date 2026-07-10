@@ -102,21 +102,36 @@ loadData();
 
 return (
 
-
 <div>
 
-  <h2>Equipment Manager</h2>
+  <h2
+    style={{
+      textAlign: "center",
+      color: "#173b73",
+      marginBottom: "25px"
+    }}
+  >
+    Equipment Manager
+  </h2>
 
   <EquipmentFilters
     columns={columns}
   />
 
-  <EquipmentForm
-    columns={columns}
-    newEquipment={newEquipment}
-    setNewEquipment={setNewEquipment}
-    createEquipment={createEquipment}
-  />
+  <div className="form-card">
+
+    <div className="form-title">
+      Add Equipment
+    </div>
+
+    <EquipmentForm
+      columns={columns}
+      newEquipment={newEquipment}
+      setNewEquipment={setNewEquipment}
+      createEquipment={createEquipment}
+    />
+
+  </div>
 
   <EquipmentTable
     columns={columns}
@@ -132,7 +147,5 @@ return (
 
 </div>
 
-
 );
-
 }

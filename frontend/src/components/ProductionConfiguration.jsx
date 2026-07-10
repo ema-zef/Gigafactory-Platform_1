@@ -41,13 +41,19 @@ export default function ProductionConfigurationManager() {
 
       setRecords(dataResponse.data || []);
 
-      setColumns(
-        (schemaResponse.data.columns || [])
-          .filter(
-            (c) =>
-              c.column_name !== "id"
-          )
-      );
+      console.log("Schema received:", schemaResponse.data);
+
+const filteredColumns =
+  schemaResponse.data.columns.filter(
+    c =>
+      c.column_name !== "id" &&
+      c.column_name !== "seq"
+  );
+
+console.log("Filtered columns:", filteredColumns);
+
+setColumns(filteredColumns);
+
 
     } catch (error) {
 

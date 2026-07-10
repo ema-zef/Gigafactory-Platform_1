@@ -1,0 +1,484 @@
+/* =====================================================
+   PAGE
+===================================================== */
+
+.route-builder{
+    width:100%;
+    max-width:1800px;
+    margin:0 auto;
+    padding:0 24px 24px;
+    display:flex;
+    flex-direction:column;
+    gap:24px;
+    box-sizing:border-box;
+}
+
+
+/* =====================================================
+   HEADER
+===================================================== */
+
+.route-header{
+
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:24px;
+
+}
+
+.route-header-card{
+
+    background:#fff;
+    border-radius:12px;
+    padding:18px;
+    border:1px solid #dbe3ef;
+    box-shadow:0 4px 12px rgba(0,0,0,.05);
+
+}
+
+.route-header-card label{
+
+    display:block;
+    margin-bottom:8px;
+    font-weight:600;
+    color:#173b73;
+
+}
+
+.route-header-card select{
+
+    width:100%;
+    padding:10px;
+    border:1px solid #ccd7e6;
+    border-radius:6px;
+    font-size:14px;
+
+}
+
+
+/* =====================================================
+   MAIN LAYOUT
+===================================================== */
+
+.route-layout{
+
+    display:grid;
+
+    grid-template-columns:1fr 1fr;
+
+    gap:30px;
+
+    align-items:start;
+
+}
+
+.route-left{
+
+    display:flex;
+    flex-direction:column;
+    gap:24px;
+    min-width:0;
+
+}
+
+.route-right{
+
+    position:sticky;
+    top:20px;
+    align-self:start;
+
+    padding-left:8px;
+
+}
+
+
+/* =====================================================
+   CARDS
+===================================================== */
+
+.route-card{
+
+    background:#fff;
+    border-radius:12px;
+    border:1px solid #dbe3ef;
+    box-shadow:0 4px 12px rgba(0,0,0,.05);
+    padding:18px;
+
+}
+
+.route-title{
+
+    margin-bottom:14px;
+    color:#173b73;
+    font-size:28px;
+    font-weight:700;
+
+}
+
+
+/* =====================================================
+   TABLE
+===================================================== */
+
+.table-wrapper{
+
+    overflow-x:auto;
+
+}
+
+.route-table{
+
+    width:100%;
+    border-collapse:collapse;
+    table-layout:fixed;
+
+}
+
+.route-table th{
+
+    background:#173b73;
+    color:#fff;
+    padding:10px 8px;
+    text-align:center;
+    vertical-align:middle;
+    font-size:14px;
+    font-weight:600;
+
+}
+
+/* Centre only the Quality column */
+
+.route-table td:nth-child(5) input{
+    text-align:center;
+}
+
+.route-table td{
+
+    border:1px solid #e3e8f2;
+    padding:6px;
+    vertical-align:middle;
+
+}
+
+
+/* =====================================================
+   COLUMN WIDTHS
+===================================================== */
+
+.step-col{
+    width:38px;
+}
+
+.equipment-col{
+    width:35%;
+}
+
+.process-col{
+    width:20%;
+}
+
+.category-col{
+    width:11%;
+}
+
+.quality-col{
+    width:70px;
+}
+
+.actions-col{
+    width:75px;
+}
+
+
+/* =====================================================
+   INPUTS
+===================================================== */
+
+.route-table select,
+.route-table input{
+
+    width:100%;
+    height:32px;
+    padding:4px 8px;
+    border:1px solid #cfd8e5;
+    border-radius:6px;
+    box-sizing:border-box;
+    background:white;
+    font-size:13px;
+
+}
+
+.route-table input[readonly]{
+
+    background:#f5f8fc;
+
+}
+
+
+/* =====================================================
+   CATEGORY
+===================================================== */
+
+.route-category{
+
+    font-weight:600;
+    color:#173b73;
+    font-size:13px;
+
+}
+
+
+/* =====================================================
+   ACTION BUTTONS
+===================================================== */
+
+.route-actions-cell{
+
+    display:flex;
+    justify-content:center;
+    gap:4px;
+
+}
+
+.route-actions-cell button{
+
+    width:26px;
+    height:26px;
+    border:none;
+    border-radius:6px;
+    cursor:pointer;
+    background:#eef4fb;
+    transition:.2s;
+
+}
+
+.route-actions-cell button:hover{
+
+    background:#dbe7f8;
+
+}
+
+
+/* =====================================================
+   ADD STEP
+===================================================== */
+
+.add-step-btn{
+
+    margin-top:14px;
+    width:100%;
+    padding:11px;
+    border:none;
+    border-radius:8px;
+    background:#173b73;
+    color:white;
+    cursor:pointer;
+    font-weight:600;
+    transition:.2s;
+
+}
+
+.add-step-btn:hover{
+
+    background:#0e2d58;
+
+}
+
+
+/* =====================================================
+   FOOTER
+===================================================== */
+
+.route-footer{
+
+    display:flex;
+    justify-content:flex-end;
+    gap:14px;
+    margin-top:20px;
+
+}
+
+.save-route-btn,
+.run-simulation-btn{
+
+    padding:12px 22px;
+    border:none;
+    border-radius:8px;
+    cursor:pointer;
+    font-weight:600;
+    font-size:14px;
+    transition:.2s;
+
+}
+
+.save-route-btn{
+
+    background:#5f6b7a;
+    color:white;
+
+}
+
+.save-route-btn:hover{
+
+    background:#495462;
+
+}
+
+.run-simulation-btn{
+
+    background:#173b73;
+    color:white;
+
+}
+
+.run-simulation-btn:hover{
+
+    background:#0d2f61;
+
+}
+
+
+/* =====================================================
+   RESPONSIVE
+===================================================== */
+
+@media (max-width:1500px){
+
+    .route-layout{
+
+        grid-template-columns:56% 44%;
+
+    }
+
+}
+
+@media (max-width:1300px){
+
+    .route-layout{
+
+        grid-template-columns:60% 40%;
+
+    }
+
+}
+
+@media (max-width:1150px){
+
+    .route-layout{
+
+        grid-template-columns:1fr;
+
+    }
+
+    .route-right{
+
+        position:relative;
+        top:auto;
+
+    }
+
+}
+
+@media (max-width:900px){
+
+    .route-header{
+
+        grid-template-columns:1fr;
+
+    }
+
+}
+
+.builder-page-header{
+
+    display:grid;
+
+    grid-template-columns:1fr auto auto;
+
+    align-items:center;
+
+    gap:24px;
+
+    margin-bottom:28px;
+
+}
+
+.builder-page-title h1{
+
+    margin:0;
+
+    font-size:34px;
+
+    color:#173b73;
+
+}
+
+.builder-page-title p{
+
+    margin-top:6px;
+
+    color:#66758c;
+
+    font-size:15px;
+
+}
+
+.builder-page-status{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:10px;
+
+    font-weight:600;
+
+    color:#1d7f35;
+
+}
+
+.status-dot{
+
+    width:12px;
+
+    height:12px;
+
+    border-radius:50%;
+
+    background:#28c840;
+
+}
+
+.builder-page-actions{
+
+    display:flex;
+
+    gap:12px;
+
+}
+
+.reset-route-btn{
+
+    background:#eceff5;
+
+    border:none;
+
+    border-radius:8px;
+
+    padding:12px 20px;
+
+    cursor:pointer;
+
+    font-weight:600;
+
+}
+
+.reset-route-btn:hover{
+
+    background:#dde3ed;
+
+}
+
+.main-content{
+    padding: 24px 32px;
+}

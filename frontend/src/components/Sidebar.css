@@ -1,0 +1,279 @@
+/* =========================================================
+   SIDEBAR
+========================================================= */
+
+.sidebar{
+
+    width:260px;
+    height:100vh;
+
+    display:flex;
+    flex-direction:column;
+
+    background:#173b73;
+
+    color:white;
+
+    overflow:hidden;
+
+    transition:
+        transform .30s ease,
+        opacity .30s ease;
+
+    box-shadow:4px 0 12px rgba(0,0,0,.15);
+
+}
+
+
+/* Hidden */
+
+.sidebar:not(.open){
+
+    transform:translateX(-260px);
+
+    opacity:0;
+
+    pointer-events:none;
+
+}
+
+
+/* Visible */
+
+.sidebar.open{
+
+    transform:translateX(0);
+
+    opacity:1;
+
+}
+
+
+/* =========================================================
+   HEADER
+========================================================= */
+
+.sidebar-header{
+
+    height:72px;
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:space-between;
+
+    padding:0 18px;
+
+    border-bottom:1px solid rgba(255,255,255,.15);
+
+}
+
+.sidebar-header h2{
+
+    font-size:18px;
+
+    font-weight:600;
+
+    letter-spacing:.5px;
+
+}
+
+
+/* =========================================================
+   COLLAPSE BUTTON
+========================================================= */
+
+.collapse-button{
+
+    width:34px;
+
+    height:34px;
+
+    border:none;
+
+    border-radius:8px;
+
+    background:rgba(255,255,255,.12);
+
+    color:white;
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+    cursor:pointer;
+
+    transition:.2s;
+
+}
+
+.collapse-button:hover{
+
+    background:rgba(255,255,255,.25);
+
+}
+
+
+/* =========================================================
+   MENU
+========================================================= */
+
+.sidebar-menu{
+
+    flex:1;
+
+    display:flex;
+
+    flex-direction:column;
+
+    padding:18px 12px;
+
+    gap:8px;
+
+    overflow-y:auto;
+
+}
+
+
+/* =========================================================
+   MENU ITEM
+========================================================= */
+
+.sidebar-item{
+
+    width:100%;
+
+    display:flex;
+
+    align-items:center;
+
+    gap:14px;
+
+    padding:12px 14px;
+
+    border:none;
+
+    border-radius:10px;
+
+    background:transparent;
+
+    color:white;
+
+    cursor:pointer;
+
+    font-size:15px;
+
+    text-align:left;
+
+    transition:
+        background .2s,
+        transform .15s;
+
+}
+
+.sidebar-item span{
+
+    white-space:nowrap;
+
+}
+
+
+/* Hover */
+
+.sidebar-item:hover{
+
+    background:rgba(255,255,255,.12);
+
+    transform:translateX(4px);
+
+}
+
+
+/* =========================================================
+   ACTIVE PAGE
+========================================================= */
+
+.sidebar-item.active{
+
+    background:white;
+
+    color:#173b73;
+
+    font-weight:600;
+
+    box-shadow:0 2px 10px rgba(0,0,0,.15);
+
+}
+
+.sidebar-item.active svg{
+
+    color:#173b73;
+
+}
+
+
+/* =========================================================
+   FOOTER
+========================================================= */
+
+.sidebar-footer{
+
+    padding:16px;
+
+    text-align:center;
+
+    font-size:12px;
+
+    color:rgba(255,255,255,.65);
+
+    border-top:1px solid rgba(255,255,255,.15);
+
+}
+
+
+/* =========================================================
+   SCROLLBAR
+========================================================= */
+
+.sidebar-menu::-webkit-scrollbar{
+
+    width:8px;
+
+}
+
+.sidebar-menu::-webkit-scrollbar-thumb{
+
+    background:rgba(255,255,255,.25);
+
+    border-radius:20px;
+
+}
+
+.sidebar-menu::-webkit-scrollbar-track{
+
+    background:transparent;
+
+}
+
+
+/* =========================================================
+   RESPONSIVE
+========================================================= */
+
+@media (max-width:900px){
+
+    .sidebar{
+
+        position:fixed;
+
+        left:0;
+        top:0;
+
+        z-index:999;
+
+    }
+
+}

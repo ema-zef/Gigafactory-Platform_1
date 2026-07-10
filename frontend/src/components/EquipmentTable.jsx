@@ -1,163 +1,292 @@
-export default function EquipmentTable({
-
-columns,
-equipment,
-
-editingId,
-editData,
-setEditData,
-
-startEdit,
-updateEquipment,
-deleteEquipment,
-
-setEditingId
-
-}) {
-
-return (
+import { useEffect, useState } from "react";
+import axios from "axios";
 
 
-<div
-  style={{
-    overflowX: "auto"
-  }}
->
+const API = import.meta.env.VITE_API_URL;
 
-  <table
-    border="1"
-    cellPadding="5"
-  >
+console.log(API);
 
-    <thead>
+export default function EquipmentDatabase() {
 
-      <tr>
+    const [columns, setColumns] = useState([]);
+    const [equipment, setEquipment] = useState([]);
 
-        <th>ID</th>
+    const [editingId, setEditingId] = useState(null);
+    const [editData, setEditData] = useState({});
 
-        {columns.map(col => (
+    useEffect(() => {
+        loadColumns();
+        loadEquipment();
+    }, []);
 
-          <th
-            key={col.column_name}
-          >
-            {col.column_name}
-          </th>
+async function loadColumns() {
 
-        ))}
+    try {
 
-        <th>Actions</th>
+        const res = await axios.get(`${API}/equipment/options`);
 
-      </tr>
+        console.log("Equipment schema response:", res.data);
 
-    </thead>
+        setColumns(Array.isArray(res.data) ? res.data : (res.data.columns ?? []));
 
-    <tbody>
+    } catch (err) {
 
-      {equipment.map(row => (
+        console.error("Equipment schema error:", err);
 
-        <tr key={row.id}>
+    }
 
-          <td>{row.id}</td>
+}
 
-          {columns.map(col => (
+async function loadEquipment() {
 
-            <td key={col.column_name}>
+    try {
 
-              {editingId === row.id ? (
+        const res = await axios.get(`${API}/equipment`);
 
-                <input
-                  value={
-                    editData[
-                      col.column_name
-                    ] || ""
-                  }
-                  onChange={(e) =>
-                    setEditData({
-                      ...editData,
-                      [col.column_name]:
-                        e.target.value
-                    })
-                  }
-                />
+        console.log(res.data[0]);
 
-              ) : (
+        setEquipment(res.data ?? []);
 
-                String(
-                  row[col.column_name]
-                  ?? ""
-                )
+    } catch (err) {
 
-              )}
+        console.error("Equipment data error:", err);
 
-            </td>
+    }
 
-          ))}
+}
 
-          <td>
+    function startEdit(row) {
 
-            {editingId === row.id ? (
+        setEditingId(row.id);
 
-              <>
+        setEditData(row);
 
-                <button
-                  onClick={() =>
-                    updateEquipment(
-                      row.id
-                    )
-                  }
-                >
-                  Save
-                </button>
+    }
 
-                <button
-                  onClick={() =>
-                    setEditingId(null)
-                  }
-                >
-                  Cancel
-                </button>
+    async function updateEquipment(id) {
 
-              </>
+        try {
 
-            ) : (
+            await axios.put(
 
-              <>
+                `${API}/equipment/${id}`,
 
-                <button
-                  onClick={() =>
-                    startEdit(row)
-                  }
-                >
-                  Edit
-                </button>
+                editData
 
-                <button
-                  onClick={() =>
-                    deleteEquipment(
-                      row.id
-                    )
-                  }
-                >
-                  Delete
-                </button>
+            );
 
-              </>
+            setEditingId(null);
 
-            )}
+            loadEquipment();
 
-          </td>
+        }
 
-        </tr>
+        catch (err) {
 
-      ))}
+            console.error(err);
 
-    </tbody>
+        }
 
-  </table>
+    }
 
-</div>
+    async function deleteEquipment(id) {
 
+        if (!window.confirm("Delete this equipment?")) return;
 
-);
+        try {
+
+            await axios.delete(`${API}/equipment/${id}`);
+
+            loadEquipment();
+
+        }
+
+        catch (err) {
+
+            console.error(err);
+
+        }
+
+    }
+
+    return (
+
+        <div className="page-card">
+
+            <h1>Equipment Database</h1>
+
+            <div className="table-wrapper">
+
+                <table className="equipment-table">
+
+                    <thead>
+
+                        <tr>
+
+                            <th>ID</th>
+
+                            {columns.map(col => (
+
+                                <th key={col.column_name ?? col.id ?? JSON.stringify(col)}>
+
+                                    {col.column_name}
+
+                                </th>
+
+                            ))}
+
+                            <th>Actions</th>
+
+                        </tr>
+
+                    </thead>
+
+                    <tbody>
+
+                        {equipment.map(row => (
+
+                            <tr key={row.id}>
+
+                                <td>{row.id}</td>
+
+                                {columns.map(col => (
+
+                                    <td key={col.column_name}>
+
+                                        {
+
+                                            editingId === row.id
+
+                                            ?
+
+                                            <input
+
+                                                value={
+
+                                                    editData[col.column_name] ?? ""
+
+                                                }
+
+                                                onChange={(e)=>
+
+                                                    setEditData({
+
+                                                        ...editData,
+
+                                                        [col.column_name]:
+
+                                                        e.target.value
+
+                                                    })
+
+                                                }
+
+                                            />
+
+                                            :
+
+                                            String(
+
+                                                row[col.column_name] ?? ""
+
+                                            )
+
+                                        }
+
+                                    </td>
+
+                                ))}
+
+                                <td>
+
+                                    {
+
+                                        editingId === row.id
+
+                                        ?
+
+                                        <>
+
+                                            <button
+
+                                                onClick={()=>
+
+                                                    updateEquipment(row.id)
+
+                                                }
+
+                                            >
+
+                                                Save
+
+                                            </button>
+
+                                            <button
+
+                                                onClick={()=>
+
+                                                    setEditingId(null)
+
+                                                }
+
+                                            >
+
+                                                Cancel
+
+                                            </button>
+
+                                        </>
+
+                                        :
+
+                                        <>
+
+                                            <button
+
+                                                onClick={()=>
+
+                                                    startEdit(row)
+
+                                                }
+
+                                            >
+
+                                                Edit
+
+                                            </button>
+
+                                            <button
+
+                                                onClick={()=>
+
+                                                    deleteEquipment(row.id)
+
+                                                }
+
+                                            >
+
+                                                Delete
+
+                                            </button>
+
+                                        </>
+
+                                    }
+
+                                </td>
+
+                            </tr>
+
+                        ))}
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </div>
+
+    );
 
 }

@@ -1,11 +1,31 @@
+import { useState } from "react";
+import axios from "axios";
 import "./FormLayout.css";
 
-export default function EquipmentForm({
+export default function ProductMaterialForm({
   columns,
-  newEquipment,
-  setNewEquipment,
-  createEquipment
+  reload,
 }) {
+
+  const [formData, setFormData] = useState({});
+
+  const API =
+    import.meta.env.VITE_API_URL ||
+    "http://localhost:8000";
+
+  const save = async () => {
+
+    await axios.post(
+      `${API}/product_material`,
+      formData
+    );
+
+    setFormData({});
+
+    reload();
+  };
+
+console.log("Columns:", columns);
 
   return (
 
@@ -28,14 +48,14 @@ export default function EquipmentForm({
 
             <input
               value={
-                newEquipment[column.column_name] || ""
+                formData[column.column_name] || ""
               }
 
               onChange={(e) =>
-                setNewEquipment({
-                  ...newEquipment,
+                setFormData({
+                  ...formData,
                   [column.column_name]:
-                    e.target.value
+                    e.target.value,
                 })
               }
             />
@@ -50,9 +70,9 @@ export default function EquipmentForm({
 
         <button
           className="primary-button"
-          onClick={createEquipment}
+          onClick={save}
         >
-          Save Equipment
+          Save Product Material
         </button>
 
       </div>

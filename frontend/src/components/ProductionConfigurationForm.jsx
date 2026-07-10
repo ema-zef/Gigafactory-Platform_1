@@ -1,7 +1,8 @@
 import { useState } from "react";
 import axios from "axios";
+import "./FormLayout.css";
 
-export default function ProductConfigurationForm({
+export default function ProductionConfigurationForm({
   columns,
   reload,
 }) {
@@ -29,37 +30,51 @@ export default function ProductConfigurationForm({
 
     <div>
 
-      {columns.map((column) => (
+      <div className="form-grid">
 
-        <div key={column.column_name}>
+  {columns.map((column) => (
 
-          <label>
-            {column.column_name}
-          </label>
+    <div
+      key={column.column_name}
+      className="form-group"
+    >
 
-          <input
-            value={
-              formData[
-                column.column_name
-              ] || ""
-            }
-            onChange={(e) =>
-              setFormData({
-                ...formData,
-                [column.column_name]:
-                  e.target.value,
-              })
-            }
-          />
+      <label>
+        {column.column_name
+          .replaceAll("_", " ")
+          .replace(/\b\w/g, c => c.toUpperCase())}
+      </label>
 
-        </div>
+      <input
+        value={
+          formData[column.column_name] || ""
+        }
 
-      ))}
+        onChange={(e) =>
+          setFormData({
+            ...formData,
+            [column.column_name]:
+              e.target.value,
+          })
+        }
+      />
 
-      <button onClick={save}>
-        Save
-      </button>
+    </div>
 
+  ))}
+
+</div>
+
+<div className="form-actions">
+
+  <button
+    className="primary-button"
+    onClick={save}
+  >
+    Save Production Configuration
+  </button>
+
+</div>
     </div>
 
   );

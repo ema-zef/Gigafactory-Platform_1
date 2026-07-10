@@ -1,13 +1,13 @@
 import { useState } from "react";
 import axios from "axios";
+import "./FormLayout.css";
 
 export default function ProductConfigurationForm({
   columns,
   reload,
 }) {
 
-  const [formData, setFormData] =
-    useState({});
+  const [formData, setFormData] = useState({});
 
   const API =
     import.meta.env.VITE_API_URL ||
@@ -27,40 +27,56 @@ export default function ProductConfigurationForm({
 
   return (
 
-    <div>
+    <>
 
-      {columns.map((column) => (
+      <div className="form-grid">
 
-        <div key={column.column_name}>
+        {columns.map((column) => (
 
-          <label>
-            {column.column_name}
-          </label>
+          <div
+            key={column.column_name}
+            className="form-group"
+          >
 
-          <input
-            value={
-              formData[
-                column.column_name
-              ] || ""
-            }
-            onChange={(e) =>
-              setFormData({
-                ...formData,
-                [column.column_name]:
-                  e.target.value,
-              })
-            }
-          />
+            <label>
+              {column.column_name
+                .replaceAll("_", " ")
+                .replace(/\b\w/g, c => c.toUpperCase())}
+            </label>
 
-        </div>
+            <input
+              value={
+                formData[column.column_name] || ""
+              }
 
-      ))}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  [column.column_name]:
+                    e.target.value,
+                })
+              }
+            />
 
-      <button onClick={save}>
-        Save
-      </button>
+          </div>
 
-    </div>
+        ))}
+
+      </div>
+
+      <div className="form-actions">
+
+        <button
+          className="primary-button"
+          onClick={save}
+        >
+          Save Product Configuration
+        </button>
+
+      </div>
+
+    </>
 
   );
+
 }

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import axios from "axios";
 
-export default function ProductConfigurationTable({
+export default function ProductMaterial({
   data,
   columns,
   reload,
@@ -19,7 +19,7 @@ export default function ProductConfigurationTable({
 
   const startEdit = (row) => {
 
-    setEditingId(row.id);
+    setEditingId(row.seq);
 
     setEditData(row);
   };
@@ -27,7 +27,7 @@ export default function ProductConfigurationTable({
   const save = async (id) => {
 
     await axios.put(
-      `${API}/product_configuration/${id}`,
+      `${API}/product_material/${id}`,
       editData
     );
 
@@ -39,7 +39,7 @@ export default function ProductConfigurationTable({
   const remove = async (id) => {
 
     await axios.delete(
-      `${API}/product_configuration/${id}`
+      `${API}/product_material/${id}`
     );
 
     reload();
@@ -49,14 +49,25 @@ export default function ProductConfigurationTable({
 
 <div className="table-wrapper">
 
-    <table border="1">
+    <table
+    style={{
+        width:"max-content",
+        width: "100%",
+        borderCollapse: "collapse",
+        marginTop: "20px"
+    }}
+    >
 
-      <thead>
+            <thead
+    style={{
+        background: "#173b73",
+        color: "white"
+    }}
+    >
 
         <tr>
 
-          <th>ID</th>
-
+          
           {columns.map((col) => (
 
             <th key={col.column_name}>
@@ -75,10 +86,9 @@ export default function ProductConfigurationTable({
 
         {data.map((row) => (
 
-          <tr key={row.id}>
+          <tr key={row.seq}>
 
-            <td>{row.id}</td>
-
+            
             {columns.map((col) => (
 
               <td
@@ -86,7 +96,7 @@ export default function ProductConfigurationTable({
               >
 
                 {editingId ===
-                row.id ? (
+                row.seq ? (
 
                   <input
                     value={
@@ -114,11 +124,11 @@ export default function ProductConfigurationTable({
             <td>
 
               {editingId ===
-              row.id ? (
+              row.seq ? (
 
                 <button
                   onClick={() =>
-                    save(row.id)
+                    save(row.seq)
                   }
                 >
                   Save
@@ -138,7 +148,7 @@ export default function ProductConfigurationTable({
 
               <button
                 onClick={() =>
-                  remove(row.id)
+                  remove(row.seq)
                 }
               >
                 Delete
