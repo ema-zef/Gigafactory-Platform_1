@@ -527,19 +527,21 @@ def equipment_options():
         with engine.connect() as conn:
 
             result = conn.execute(
-                text("""
+                text(
+                    """
                     SELECT
-                        id,
-                        technology_name,
-                        process,
-                        process_category,
-                        quality_rate
-                    FROM equipment
-                    ORDER BY technology_name
-                """)
+                        column_name
+                    FROM information_schema.columns
+                    WHERE table_name = 'equipment'
+                    ORDER BY ordinal_position
+                    """
+                )
             )
 
-            return [dict(row._mapping) for row in result]
+            return {
+                "table_exists": True,
+                "columns": [dict(row._mapping) for row in result]
+            }
 
     except Exception as e:
 
