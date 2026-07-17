@@ -89,7 +89,7 @@ def product_options():
 # Create Simulation Session
 # ----------------------------------
 
-@app.post("/simulation_session")
+@router.post("/simulation_session")
 def create_simulation_session(data: dict):
 
     return {
@@ -100,7 +100,7 @@ def create_simulation_session(data: dict):
 # Save Simulation
 # ----------------------------------
 
-@app.post("/save_simulation/{session_id}")
+@router.post("/save_simulation/{session_id}")
 def save_simulation(session_id: str):
 
     return {

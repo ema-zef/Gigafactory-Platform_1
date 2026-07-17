@@ -6,7 +6,7 @@ router = APIRouter()
 # Existing plot endpoint
 # ----------------------------------
 
-@app.get("/dwelling-time")
+@router.get("/dwelling-time")
 def get_dwelling_time():
 
     solid_content = np.linspace(0, 50, 100)

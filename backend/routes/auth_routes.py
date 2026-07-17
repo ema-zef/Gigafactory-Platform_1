@@ -6,7 +6,7 @@ router = APIRouter()
 # Login
 # ----------------------------------
 
-@app.post("/login")
+@router.post("/login")
 def login(credentials: LoginRequest):
 
     if credentials.username not in users:

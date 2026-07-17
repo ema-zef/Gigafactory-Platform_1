@@ -15,18 +15,18 @@ def fuseki_test():
 # Deployment verification
 # ----------------------------------
 
-@app.get("/version")
+@router.get("/version")
 def version():
     return {
         "version": "render-test-2026-06-03"
     }
 
-@app.get("/render-debug")
+@router.get("/render-debug")
 def render_debug():
     return {
         "deployment": "fuseki-version-loaded"
     }
-@app.get("/deployment-id")
+@router.get("/deployment-id")
 def deployment_id():
     return {
         "deployment": "2026-06-10-debug-01"
@@ -36,7 +36,7 @@ def deployment_id():
 # Fuseki debug
 # ----------------------------------  
 
-@app.get("/fuseki-debug")
+@router.get("/fuseki-debug")
 def fuseki_debug():
 
     try:

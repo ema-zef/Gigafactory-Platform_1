@@ -6,7 +6,7 @@ router = APIRouter()
 # Health Check
 # ----------------------------------
 
-@app.get("/health")
+@router.get("/health")
 def health():
 
     try:
@@ -32,7 +32,7 @@ def health():
 # PostgreSQL test
 # ----------------------------------
 
-@app.get("/db-test")
+@router.get("/db-test")
 def db_test():
 
     if engine is None:
@@ -67,7 +67,7 @@ def db_test():
 # Root
 # ----------------------------------
 
-@app.get("/")
+@router.get("/")
 def root():
 
     return {
