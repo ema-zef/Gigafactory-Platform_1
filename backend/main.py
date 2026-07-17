@@ -1,16 +1,11 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routes import router
 
-# ----------------------------------
-# App
-# ----------------------------------
+from routes import api_router
 
 app = FastAPI()
 
-# ----------------------------------
-# CORS
-# ----------------------------------
+app.include_router(api_router)
 
 app.add_middleware(
     CORSMiddleware,
