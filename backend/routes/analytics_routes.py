@@ -1,3 +1,7 @@
+from fastapi import APIRouter
+
+router = APIRouter()
+
 # ----------------------------------
 # Existing plot endpoint
 # ----------------------------------
