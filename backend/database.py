@@ -846,28 +846,28 @@ def load_production_configuration(plant_code):
     
     with engine.connect() as conn:
     
-    return conn.execute(
-    text("""
-        SELECT
-            annual_output_kwh,
-            hours_per_shift,
-            no_of_shifts_per_day,
-            available_time_min,
-            electricity_cost_rate_min_eur_per_kwh,
-            electricity_cost_rate_max_eur_per_kwh,
-            gas_cost_rate_min_eur_per_kwh,
-            gas_cost_rate_max_eur_per_kwh,
-            floor_space_cost_rate_eur_per_m2,
-            elec_ghge_rate,
-            gas_ghge_rate,
-            operator_rate
-        FROM production_configuration
-        WHERE code = :plant
-    """),
-    {
-        "plant": plant_code
-    }
-).mappings().first()
+        return conn.execute(
+            text("""
+                SELECT
+                annual_output_kwh,
+                hours_per_shift,
+                no_of_shifts_per_day,
+                available_time_min,
+                electricity_cost_rate_min_eur_per_kwh,
+                electricity_cost_rate_max_eur_per_kwh,
+                gas_cost_rate_min_eur_per_kwh,
+                gas_cost_rate_max_eur_per_kwh,
+                floor_space_cost_rate_eur_per_m2,
+                elec_ghge_rate,
+                gas_ghge_rate,
+                operator_rate
+                FROM production_configuration
+                WHERE code = :plant
+            """),
+            {
+             "plant": plant_code
+            }
+        ).mappings().first()
 
 # ----------------------------------
 # Equipment QUERY
