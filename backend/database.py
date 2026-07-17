@@ -877,18 +877,18 @@ def load_equipment(ids):
     
     with engine.connect() as conn:
         
-    return conn.execute(
+        return conn.execute(
 
-    text("""
-        SELECT
-            no_operators_min,
-            no_operators_max
-        FROM equipment
-        WHERE id = :equipment_id
-    """),
+            text("""
+                SELECT
+                no_operators_min,
+                no_operators_max
+                FROM equipment
+                WHERE id = :equipment_id
+            """),
 
-    {
-        "equipment_id": equipment["technology_id"]
-    }
+            {
+             "equipment_id": equipment["technology_id"]
+            }
 
-).mappings().first()
+        ).mappings().first()
