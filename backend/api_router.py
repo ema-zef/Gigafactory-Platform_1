@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 
 from routes.equipment_routes import router as equipment_router
-from routes.product_configuration_routes import router as product_router
+from routes.product_routes import router as product_router
 from routes.production_routes import router as production_router
 from routes.simulation_routes import router as simulation_router
 from routes.debug_routes import router as debug_router
