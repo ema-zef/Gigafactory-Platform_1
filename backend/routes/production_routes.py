@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from backend.database.product_configuration import (
+from database.product_configuration import (
     insert_production_configuration,
     update_production_configuration,
     read_production_configuration,
