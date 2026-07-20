@@ -8,7 +8,7 @@ from database import (
     delete_equipment,
     equipment_schema,
     check_equipment_table,
-    get_equipment_options,
+    
 )
 
 router = APIRouter()
