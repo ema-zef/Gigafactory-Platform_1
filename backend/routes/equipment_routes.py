@@ -1,6 +1,16 @@
 from fastapi import APIRouter
 from database import check_equipment_table
 
+from database import (
+    insert_equipment,
+    update_equipment,
+    read_equipment,
+    delete_equipment,
+    get_equipment_schema,
+    check_equipment_table,
+    get_equipment_options,
+)
+
 router = APIRouter()
 
 from database import check_equipment_table
