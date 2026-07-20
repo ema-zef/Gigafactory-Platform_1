@@ -1,11 +1,11 @@
 from fastapi import APIRouter
 
 from database import (
-    insert_production_configuration,
+    create_production_configuration,
     update_production_configuration,
-    read_production_configuration,
+    get_production_configuration,
     delete_production_configuration,
-    get_production_configuration_schema,
+    production_configuration_schema,
     check_production_configuration,
     get_production_configuration_options,
 )

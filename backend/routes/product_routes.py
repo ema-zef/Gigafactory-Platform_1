@@ -5,7 +5,7 @@ from database import (
     update_product_configuration,
     read_product_configuration,
     delete_product_configuration,
-    get_product_configuration_schema,
+    product_configuration_schema,
     check_product_configuration,
     get_product_configuration_options,
 )
