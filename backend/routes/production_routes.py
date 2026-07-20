@@ -1,5 +1,15 @@
 from fastapi import APIRouter
 
+from backend.database.product_configuration import (
+    insert_production_configuration,
+    update_production_configuration,
+    read_production_configuration,
+    delete_production_configuration,
+    get_production_configuration_schema,
+    check_production_configuration,
+    get_production_configuration_options,
+)
+
 router = APIRouter()
 
 # ----------------------------------
