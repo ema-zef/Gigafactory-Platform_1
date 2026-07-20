@@ -2,9 +2,9 @@ from fastapi import APIRouter
 
 from database import (
     create_product_material,
-    update_product_material_db,
+    update_product_material,
     read_product_material,
-    delete_product_material_db,
+    delete_product_material,
     get_product_material_schema,
     check_product_material,
     get_product_material_options,
