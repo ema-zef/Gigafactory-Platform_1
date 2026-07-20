@@ -76,7 +76,7 @@ def read_equipment():
 # Equipment Update
 # ----------------------------------
 
-def update_equipment_db(
+def update_equipment_table(
     equipment_id: int,
     equipment: dict
 ):

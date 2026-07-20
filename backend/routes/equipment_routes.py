@@ -2,8 +2,8 @@ from fastapi import APIRouter
 
 from database import (
     read_equipment,
-    update_equipment_db,
-    get_equipment,
+    update_equipment_table,
+    
     delete_equipment_db,
     get_equipment_schema,
     check_equipment_table,
@@ -45,7 +45,7 @@ def update_equipment(
 
 ):
 
-    return update_equipment_db(
+    return update_equipment_table(
 
         equipment_id,
 
