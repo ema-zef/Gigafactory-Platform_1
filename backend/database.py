@@ -684,7 +684,7 @@ def update_production_configuration(
 # Production Configuration READ
 # ----------------------------------
 
-def get_production_configuration():
+def read_production_configuration():
 
     try:
 
@@ -714,7 +714,7 @@ def get_production_configuration():
 # Production Configuration DELETE
 # ----------------------------------
 
-def delete_production_configuration(
+def delete_production_configuration_db(
     record_id: int
 ):
 
@@ -734,7 +734,7 @@ def delete_production_configuration(
 # Production Configuration Schema
 # ----------------------------------
 
-def production_configuration_schema():
+def get_production_configuration_schema():
 
     with engine.connect() as conn:
 
@@ -758,7 +758,7 @@ def production_configuration_schema():
 # Production Configuration Check
 # ----------------------------------
 
-def check_production_configuration():
+def check_production_configuration_db():
 
     with engine.connect() as conn:
 
@@ -789,7 +789,7 @@ def check_production_configuration():
 # Production Configuration OPTION
 # ----------------------------------
 
-def get_production_configuration_options():
+def read_production_configuration_options():
 
     try:
 

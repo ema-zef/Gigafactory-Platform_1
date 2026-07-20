@@ -3,11 +3,11 @@ from fastapi import APIRouter
 from database import (
     create_production_configuration,
     update_production_configuration,
-    get_production_configuration,
-    delete_production_configuration,
-    production_configuration_schema,
-    check_production_configuration,
-    get_production_configuration_options,
+    read_production_configuration,
+    delete_production_configuration_db,
+    get_production_configuration_schema,
+    check_production_configuration_db,
+    read_production_configuration_options,
 )
 
 router = APIRouter()
@@ -29,7 +29,7 @@ def debug_production_columns():
 @router.post("/production_configuration")
 def create_production_configuration(record: dict):
 
-    return insert_production_configuration(record)
+    return create_production_configuration(record)
     
 # ----------------------------------
 # Production Configuration UPDATE
@@ -103,4 +103,4 @@ def check_production_configuration():
 @router.get("/production_configuration/options")
 def get_production_configuration_options():
 
-    return production_configuration_options()
+    return read_production_configuration_options()
