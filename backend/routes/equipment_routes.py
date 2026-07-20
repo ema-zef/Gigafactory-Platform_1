@@ -2,7 +2,7 @@ from fastapi import APIRouter
 from database import check_equipment_table
 
 from database import (
-    insert_equipment,
+    get_equipment,
     update_equipment,
     get_equipment,
     delete_equipment,
