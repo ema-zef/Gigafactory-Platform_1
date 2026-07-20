@@ -31,7 +31,7 @@ def equipment_check():
 @router.get("/equipment")
 def get_equipment():
 
-    return read_equipment()
+    return get_equipment()
     
 # ----------------------------------
 # Equipment Update
@@ -46,7 +46,7 @@ def update_equipment(
 
 ):
 
-    return update_equipment_db(
+    return update_equipment(
 
         equipment_id,
 
@@ -65,7 +65,7 @@ def delete_equipment(
 
 ):
 
-    return delete_equipment_db(
+    return delete_equipment(
 
         equipment_id
 
@@ -78,4 +78,4 @@ def delete_equipment(
 @router.get("/equipment/schema")
 def equipment_schema():
 
-    return get_equipment_schema()
+    return equipment_schema()
