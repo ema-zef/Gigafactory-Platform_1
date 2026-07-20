@@ -59,7 +59,7 @@ def check_equipment_table():
 # Equipment READ
 # ----------------------------------
 
-def get_equipment():
+def read_equipment():
 
     with engine.connect() as conn:
 
@@ -76,7 +76,7 @@ def get_equipment():
 # Equipment Update
 # ----------------------------------
 
-def update_equipment(
+def update_equipment_db(
     equipment_id: int,
     equipment: dict
 ):
@@ -109,7 +109,7 @@ def update_equipment(
 # Equipment DELETE
 # ----------------------------------
 
-def delete_equipment(equipment_id: int):
+def delete_equipment_db(equipment_id: int):
 
     with engine.begin() as conn:
 
@@ -129,7 +129,7 @@ def delete_equipment(equipment_id: int):
 # Equipment Metadata
 # ----------------------------------
 
-def equipment_schema():
+def get_equipment_schema():
 
     with engine.connect() as conn:
 
@@ -148,7 +148,6 @@ def equipment_schema():
             dict(row._mapping)
             for row in result
         ]
-
 
 
 

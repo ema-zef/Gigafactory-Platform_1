@@ -1,12 +1,11 @@
 from fastapi import APIRouter
-from database import check_equipment_table
 
 from database import (
+    read_equipment,
+    update_equipment_db,
     get_equipment,
-    update_equipment,
-    get_equipment,
-    delete_equipment,
-    equipment_schema,
+    delete_equipment_db,
+    get_equipment_schema,
     check_equipment_table,
     
 )
@@ -31,7 +30,7 @@ def equipment_check():
 @router.get("/equipment")
 def get_equipment():
 
-    return get_equipment_db()
+    return read_equipment()
     
 # ----------------------------------
 # Equipment Update
