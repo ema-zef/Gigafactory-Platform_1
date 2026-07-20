@@ -1,4 +1,5 @@
 from fastapi import APIRouter
+from database import check_equipment_table
 
 router = APIRouter()
 
