@@ -665,7 +665,7 @@ def update_production_configuration(
     sql = f"""
         UPDATE production_configuration
         SET {set_clause}
-        WHERE row_id=:id
+        WHERE id=:row_id
     """
 
     with engine.begin() as conn:
@@ -674,7 +674,7 @@ def update_production_configuration(
             text(sql),
             {
                 **data,
-                "row_id": record_id
+                "id": record_row_id
             }
         )
 
@@ -723,7 +723,7 @@ def delete_production_configuration_db(
         conn.execute(
             text("""
                 DELETE FROM production_configuration
-                WHERE row_id=:id
+                WHERE id=:row_id
             """),
             {"id": record_id}
         )
