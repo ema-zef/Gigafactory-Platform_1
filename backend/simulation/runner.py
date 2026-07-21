@@ -1,293 +1,252 @@
 from database import (
-
     load_product_configuration,
-
     load_production_configuration,
-
     load_equipment
-
 )
 
-from simulation.capacity import calculate_capacity
-
-from simulation.machines import calculate_machines
-
-from simulation.operators import calculate_operators
-
-from simulation.energy import calculate_energy
-
-from simulation.costs import calculate_costs
-
-from simulation.carbon import calculate_carbon
-
-from simulation.bottleneck import identify_bottleneck
-
-
-def run(request):
-
-    product = load_product_configuration(
-
-        request.product_code
-
-    )
-
-    production = load_production_configuration(
-
-        request.plant_code
-
-    )
-
-    equipment_lookup = load_equipment(
-
-        [
-
-            step["technology_id"]
-
-            for step in
-
-            request.cathode_route
-
-            +
-
-            request.anode_route
-
-            +
-
-            request.assembly_route
-
-        ]
-
-    )
-
-    capacity = calculate_capacity(
-
-        product,
-
-        production
-
-    )
-
-    technologies = []
-
-    for step in (
-
-        request.cathode_route
-
-        +
-
-        request.anode_route
-
-        +
-
-        request.assembly_route
-
-    ):
-
-        equipment = equipment_lookup[
-
-            step["technology_id"]
-
-        ]
-
-        machines = calculate_machines(
-
-            capacity["required_good_cells_day"],
-
-            equipment,
-
-            production
-
-        )
-
-        operators = calculate_operators(
-
-            machines["machines"],
-
-            equipment
-
-        )
-
-        energy = calculate_energy(
-
-            machines,
-
-            equipment,
-
-            production
-
-        )
-
-        costs = calculate_costs(
-
-            machines,
-
-            operators,
-
-            energy,
-
-            production
-
-        )
-
-        carbon = calculate_carbon(
-
-            energy,
-
-            production
-
-        )
-
-        technologies.append({
-
-            "technology":
-
-                step["technology_name"],
-
-            "machines":
-
-                machines,
-
-            "operators":
-
-                operators,
-
-            "energy":
-
-                energy,
-
-            "costs":
-
-                costs,
-
-            "carbon":
-
-                carbon
-
-        })
-
-    bottleneck = identify_bottleneck(
-
-        technologies
-
-    )
-
-    return {
-
-        "plant": production,
-
-        "product": product,
-
-        "capacity": capacity,
-
-        "technologies": technologies,
-
-        "bottleneck": bottleneck
-
-    }
-    
 from simulation.capacity import (
     calculate_capacity,
     calculate_required_material_flow
 )
 
-capacity = calculate_capacity(
-    product,
-    production
-)
+from simulation.machines import calculate_machines
+from simulation.operators import calculate_operators
+from simulation.energy import calculate_energy
+from simulation.costs import calculate_costs
+from simulation.carbon import calculate_carbon
+from simulation.bottleneck import identify_bottleneck
 
-simulation = calculate_required_material_flow(
-    route=route,
-    product=product,
-    required_good_cells_day=capacity["required_good_cells_day"]
-)
 
-return {
+def run(request):
 
-    "plant": plant_summary,
+    # ----------------------------------
+    # Load master data
+    # ----------------------------------
 
-    "product": product_summary,
+    product = load_product_configuration(
+        request.product_code
+    )
 
-    "technologies": technologies,
+    production = load_production_configuration(
+        request.plant_code
+    )
 
-    "overall": overall_summary,
+    route = (
+        request.cathode_route +
+        request.anode_route +
+        request.assembly_route
+    )
 
-    "bottleneck": bottleneck,
+    equipment_lookup = load_equipment(
+        [
+            step["technology_id"]
+            for step in route
+        ]
+    )
 
-    "costs": costs,
+    # ----------------------------------
+    # Capacity
+    # ----------------------------------
 
-    "energy": energy,
+    capacity = calculate_capacity(
+        product,
+        production
+    )
 
-    "carbon": carbon
+    required_good_cells_day = capacity["required_good_cells_day"]
 
-}
+    # ----------------------------------
+    # Material Flow
+    # ----------------------------------
 
-plant_summary = {
+    technologies = calculate_required_material_flow(
+        route=route,
+        product=product,
+        required_good_cells_day=required_good_cells_day
+    )
 
-    "code": plant_code,
+    # ----------------------------------
+    # Machine / Operator / Energy / Cost
+    # ----------------------------------
 
-    "hours_per_shift": hours_per_shift,
+    total_machines = 0
+    total_operators = 0
+    total_energy = 0
+    total_cost = 0
+    total_carbon = 0
 
-    "shifts_per_day": shifts_per_day,
+    for tech in technologies:
 
-    "available_time_min": available_time_min,
+        equipment = equipment_lookup[
+            tech["technology_id"]
+        ]
 
-    "uptime": round(uptime * 100,2),
+        machines = calculate_machines(
+            tech["required_output"],
+            equipment,
+            production
+        )
 
-    "operator_rate": production["operator_rate"],
+        operators = calculate_operators(
+            machines["machines"],
+            equipment
+        )
 
-    "electricity_cost": {
+        energy = calculate_energy(
+            machines,
+            equipment,
+            production
+        )
 
-        "min": production["electricity_cost_rate_min_eur_per_kwh"],
+        costs = calculate_costs(
+            machines,
+            operators,
+            energy,
+            production
+        )
 
-        "max": production["electricity_cost_rate_max_eur_per_kwh"]
+        carbon = calculate_carbon(
+            energy,
+            production
+        )
 
-    },
+        tech["machines"] = machines
+        tech["operators"] = operators
+        tech["energy"] = energy
+        tech["costs"] = costs
+        tech["carbon"] = carbon
 
-    "gas_cost": {
+        total_machines += machines["machines"]
+        total_operators += operators["operators"]
+        total_energy += energy["daily_energy_kwh"]
+        total_cost += costs["daily_cost_eur"]
+        total_carbon += carbon["daily_carbon_kg"]
 
-        "min": production["gas_cost_rate_min_eur_per_kwh"],
+    # ----------------------------------
+    # Bottleneck
+    # ----------------------------------
 
-        "max": production["gas_cost_rate_max_eur_per_kwh"]
+    bottleneck = identify_bottleneck(
+        technologies
+    )
 
-    },
+    # ----------------------------------
+    # Plant Summary
+    # ----------------------------------
 
-    "floor_space_cost": production["floor_space_cost_rate_eur_per_m2"],
+    available_time = (
+        production["hours_per_shift"] *
+        production["shifts_per_day"] *
+        60
+    )
 
-    "ghge": {
+    plant_summary = {
 
-        "electricity": production["elec_ghge_rate"],
+        "plant_code": request.plant_code,
 
-        "gas": production["gas_ghge_rate"]
+        "hours_per_shift":
+            production["hours_per_shift"],
+
+        "shifts_per_day":
+            production["shifts_per_day"],
+
+        "uptime":
+            production["uptime"],
+
+        "available_time_min":
+            available_time,
+
+        "operator_rate":
+            production["operator_rate"],
+
+        "electricity_cost": {
+            "min":
+                production["electricity_cost_rate_min_eur_per_kwh"],
+            "max":
+                production["electricity_cost_rate_max_eur_per_kwh"]
+        },
+
+        "gas_cost": {
+            "min":
+                production["gas_cost_rate_min_eur_per_kwh"],
+            "max":
+                production["gas_cost_rate_max_eur_per_kwh"]
+        },
+
+        "floor_space_cost":
+            production["floor_space_cost_rate_eur_per_m2"],
+
+        "ghge": {
+            "electricity":
+                production["elec_ghge_rate"],
+            "gas":
+                production["gas_ghge_rate"]
+        }
 
     }
 
-}
+    # ----------------------------------
+    # Product Summary
+    # ----------------------------------
 
-product_summary = {
+    product_summary = {
 
-    "code": product_code,
+        "product_code":
+            request.product_code,
 
-    "cell_capacity_kwh": product["cell_capacity_kwh"],
+        "cell_capacity_kwh":
+            product["cell_capacity_kwh"],
 
-    "good_cells_day": round(required_good_cells_day,2)
+        "required_good_cells_day":
+            required_good_cells_day
 
-}
+    }
 
-overall_summary = {
+    # ----------------------------------
+    # Overall Summary
+    # ----------------------------------
 
-    "daily_output": round(
+    overall_summary = {
 
-        technologies[-1]["required_output"],
+        "machines":
+            total_machines,
 
-        2
+        "operators":
+            total_operators,
 
-    ),
+        "energy_kwh":
+            total_energy,
 
-    "machines": overall_machines,
+        "cost_eur":
+            total_cost,
 
-    "operators": overall_operators,
+        "carbon_kg":
+            total_carbon
 
-    "uptime": round(uptime*100,2)
+    }
 
-}
+    # ----------------------------------
+    # Return
+    # ----------------------------------
 
+    return {
+
+        "plant":
+            plant_summary,
+
+        "product":
+            product_summary,
+
+        "capacity":
+            capacity,
+
+        "technologies":
+            technologies,
+
+        "overall":
+            overall_summary,
+
+        "bottleneck":
+            bottleneck
+
+    }

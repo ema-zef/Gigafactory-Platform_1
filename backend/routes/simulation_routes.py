@@ -1,5 +1,8 @@
 from fastapi import APIRouter
 
+from simulation.runner import run
+from models.simulation import SimulationRequest
+
 router = APIRouter()
 
 from database import (
@@ -96,6 +99,19 @@ def product_check():
 def product_options():
 
     return get_product_configuration_options()
+    
+# ----------------------------------
+# Run Simulation
+# ----------------------------------  
+@router.post("/simulation/run")
+def run_simulation(request: SimulationRequest):
+
+    result = run(request)
+
+    return {
+        "status": "success",
+        "result": result
+    }
 
 # ----------------------------------
 # Create Simulation Session
@@ -124,12 +140,3 @@ def save_simulation(session_id: str):
 
     }
     
-@router.post("/simulation/run")
-def run_simulation(data: dict):
-
-    # Run your simulation here
-
-    return {
-        "status": "success",
-        "result": {}
-    }
