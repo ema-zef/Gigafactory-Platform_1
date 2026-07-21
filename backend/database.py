@@ -221,7 +221,7 @@ def update_product_configuration(
 
         SET {set_clause}
 
-        WHERE id=:id
+        WHERE id=:row_id
 
     """
 
@@ -263,7 +263,7 @@ def read_product_configuration():
 
                 FROM product_configuration
 
-                ORDER BY id
+                ORDER BY row_idid
 
             """)
 
@@ -654,6 +654,7 @@ def create_production_configuration(
 # ----------------------------------
 
 def update_production_configuration(
+    record_id: int,
     data: dict
 ):
 
@@ -673,11 +674,12 @@ def update_production_configuration(
             text(sql),
             {
                 **data,
-                "id": id
+                "id": record_id
             }
         )
 
     return {"status": "updated"}
+
     
 # ----------------------------------
 # Production Configuration READ
@@ -713,16 +715,18 @@ def read_production_configuration():
 # Production Configuration DELETE
 # ----------------------------------
 
-def delete_production_configuration_db():
+def delete_production_configuration_db(
+    record_id: int
+):
 
     with engine.begin() as conn:
 
         conn.execute(
             text("""
                 DELETE FROM production_configuration
-                WHERE id=:row_id
+                WHERE id=:id
             """),
-            {"id": id}
+            {"id": record_id}
         )
 
     return {"status": "deleted"}
