@@ -1,11 +1,9 @@
-# models/simulation.py
-
 from pydantic import BaseModel
 
 class RouteStep(BaseModel):
-    equipment_id: int
     technology_id: int
     technology_name: str
+    equipment_id: int
     process: str
     process_category: str
     quality_rate: float
