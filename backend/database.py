@@ -221,7 +221,7 @@ def update_product_configuration(
 
         SET {set_clause}
 
-        WHERE id=:row_id
+        WHERE row_id=:id
 
     """
 
@@ -295,7 +295,7 @@ def delete_product_configuration(
         conn.execute(
             text("""
                 DELETE FROM product_configuration
-                WHERE id=:row_id
+                WHERE row_id=:id
             """),
             {"id": record_id}
         )
