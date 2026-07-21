@@ -263,7 +263,7 @@ def read_product_configuration():
 
                 FROM product_configuration
 
-                ORDER BY row_idid
+                ORDER BY row_id
 
             """)
 
@@ -295,7 +295,7 @@ def delete_product_configuration(
         conn.execute(
             text("""
                 DELETE FROM product_configuration
-                WHERE id=:id
+                WHERE id=:row_id
             """),
             {"id": record_id}
         )
