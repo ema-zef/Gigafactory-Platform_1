@@ -2,7 +2,6 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from api_router import api_router
-from simulation_routes import router as simulation_router
 
 app = FastAPI()
 
