@@ -1,13 +1,13 @@
 from fastapi import APIRouter
 
 from database import (
-    create_product_material,
-    update_product_material,
-    get_product_material,
-    delete_product_material,
-    product_material_schema,
+    insert_product_material,
+    update_product_material_db,
+    get_product_material_db,
+    delete_product_material_db,
+    get_product_material_schema,
     check_product_material,
-    get_product_material_options,
+    product_material_options,
 )
 
 router = APIRouter()
@@ -28,7 +28,7 @@ def create_product_material(record: dict):
 @router.get("/product_material")
 def get_product_material():
 
-    return get_product_material()
+    return get_product_material_db()
     
 # ----------------------------------
 # Product Material UPDATE
@@ -75,7 +75,7 @@ def delete_product_material(
 @router.get("/product_material/schema")
 def product_material_schema():
 
-    return product_material_schema()
+    return get_product_material_schema()
     
 # ----------------------------------
 # Product Material Check
@@ -93,5 +93,5 @@ def product_material_check():
 @router.get("/product_material/options")
 def get_product_material_options():
 
-    return get_product_material_options()
+    return product_material_options()
     

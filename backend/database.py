@@ -394,7 +394,7 @@ def get_product_configuration_options():
 # Product Material CREATE
 # ----------------------------------
 
-def create_product_material(record: dict):
+def insert_product_material(record: dict):
 
     columns = ", ".join(record.keys())
 
@@ -424,7 +424,7 @@ def create_product_material(record: dict):
 # Product Material READ
 # ----------------------------------
 
-def get_product_material():
+def get_product_material_db():
 
     try:
 
@@ -454,7 +454,7 @@ def get_product_material():
 # Product Material UPDATE
 # ----------------------------------
 
-def update_product_material(
+def update_product_material_db(
     record_id: int,
     record: dict
 ):
@@ -490,7 +490,7 @@ def update_product_material(
 # Product Material DELETE
 # ----------------------------------
 
-def delete_product_material(record_id: int):
+def delete_product_material_db(record_id: int):
 
     with engine.begin() as conn:
 
@@ -510,7 +510,7 @@ def delete_product_material(record_id: int):
 # Product Material Schema
 # ----------------------------------
 
-def product_material_schema():
+def get_product_material_schema():
 
     with engine.connect() as conn:
 
@@ -565,7 +565,7 @@ def check_product_material():
 # Product Material Options
 # ----------------------------------
 
-def get_product_material_options():
+def product_material_options():
 
     try:
 
