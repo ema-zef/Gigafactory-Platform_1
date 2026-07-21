@@ -2,6 +2,18 @@ from fastapi import APIRouter
 
 router = APIRouter()
 
+from database import (
+    create_production_configuration,
+    update_production_configuration,
+    read_production_configuration,
+    delete_production_configuration_db,
+    get_production_configuration_schema,
+    check_production_configuration_db,
+    read_production_configuration_options,
+)
+
+import uuid
+
 # ----------------------------------
 # Product Configuration CREATE
 # ----------------------------------
@@ -92,6 +104,8 @@ def product_options():
 @router.post("/simulation_session")
 def create_simulation_session(data: dict):
 
+    session_id = str(uuid.uuid4())
+
     return {
         "session_id": session_id
     }
@@ -108,4 +122,14 @@ def save_simulation(session_id: str):
         "status":
             "saved"
 
+    }
+    
+@router.post("/simulation/run")
+def run_simulation(data: dict):
+
+    # Run your simulation here
+
+    return {
+        "status": "success",
+        "result": {}
     }
