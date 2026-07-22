@@ -8,7 +8,7 @@ def calculate_operators(
 
     minimum = (
 
-        equipment["no_operators_min"]
+        equipment["no_of_operators_min"]
 
         or 0
 
@@ -16,7 +16,7 @@ def calculate_operators(
 
     maximum = (
 
-        equipment["no_operators_max"]
+        equipment["no_of_operators_max"]
 
         or minimum
 
