@@ -108,7 +108,7 @@ def run(request):
         tech["carbon"] = carbon
 
         total_machines += machines["machines"]
-        total_operators += operators["operators"]
+        total_operators += operators["operators_min"]
         total_energy += energy["daily_energy_kwh"]
         total_cost += costs["daily_cost_eur"]
         total_carbon += carbon["daily_carbon_kg"]

@@ -1,6 +1,6 @@
 simulation.append({
 
-    "equipment_id": equipment["equipment_id"],
+    "technology_id": equipment["technology_id"],
 
     "technology_name": equipment["technology_name"],
 
@@ -15,16 +15,6 @@ simulation.append({
     "required_output": round(output, 2),
 
     "required_input": round(input_required, 2),
-
-    "operators_min": operators_min,
-
-    "operators_max": operators_max,
-
-    "machines": machines,
-
-    "shifts": shifts_per_day,
-
-    "uptime": round(uptime * 100, 2)
 
 })
 
