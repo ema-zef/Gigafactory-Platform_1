@@ -41,7 +41,7 @@ def calculate_machines(
 
     daily_capacity = (
 
-        equipment["throughput_per_min"]
+        equipment["speed_m_min"]
 
         *
 
