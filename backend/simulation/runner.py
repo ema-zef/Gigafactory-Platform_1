@@ -34,7 +34,7 @@ def run(request):
     )
 
     equipment_lookup = load_equipment(
-        [step.equipment_id for step in route]
+        [step.technology_id for step in route]
     )
 
     # ----------------------------------
@@ -72,7 +72,7 @@ def run(request):
 
         equipment_lookup = load_equipment(
 
-            [step.equipment_id for step in route]
+            [step.technology_id for step in route]
 
         )
 
