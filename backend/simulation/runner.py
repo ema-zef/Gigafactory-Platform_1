@@ -109,9 +109,9 @@ def run(request):
 
         total_machines += machines["machines"]
         total_operators += operators["operators_min"]
-        total_energy += energy["daily_energy_kwh"]
-        total_cost += costs["daily_cost_eur"]
-        total_carbon += carbon["daily_carbon_kg"]
+        total_energy += energy["electricity"]
+        total_cost += costs["labour"]
+        total_carbon += carbon["total"]
 
     # ----------------------------------
     # Bottleneck
