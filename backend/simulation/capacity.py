@@ -85,14 +85,14 @@ def calculate_required_material_flow(
 
     for equipment in reversed(route):
 
-        quality = float(equipment["quality_rate"]) / 100
+        quality = float(equipment.quality_rate) / 100
 
         if quality <= 0:
             quality = 1.0
 
         required_input_cells = required_cells / quality
 
-        category = equipment["process_category"]
+        category = equipment.process_category
 
         # -----------------------------------------
         # CELL PROCESS
@@ -204,17 +204,17 @@ def calculate_required_material_flow(
 
         simulation.append({
 
-            "equipment_id": equipment["equipment_id"],
+            "equipment_id": equipment.equipment_id,
 
-            "technology_id": equipment["technology_id"],
+            "technology_id": equipment.technology_id,
 
-            "technology_name": equipment["technology_name"],
+            "technology_name": equipment.technology_name,
 
-            "process": equipment["process"],
+            "process": equipment.process,
 
             "category": category,
 
-            "quality_rate": equipment["quality_rate"],
+            "quality_rate": equipment.quality_rate,
 
             "unit": unit,
 
