@@ -33,9 +33,9 @@ def run(request):
         + request.assembly_route
     )
 
-    equipment_lookup = load_equipment(
-        [step.technology_id for step in route]
-    )
+    equipment = equipment_lookup[
+        tech["equipment_id"]
+    ]
 
     # ----------------------------------
     # Capacity

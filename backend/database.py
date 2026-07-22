@@ -878,23 +878,17 @@ def load_equipment(ids):
     with engine.connect() as conn:
 
         rows = conn.execute(
-
             text("""
                 SELECT *
                 FROM equipment
-                WHERE technology_id IN :ids
+                WHERE id IN :ids
             """),
-
             {
                 "ids": tuple(ids)
             }
-
         ).mappings().all()
 
-    lookup = {}
-
-    for row in rows:
-
-        lookup[row["technology_id"]] = dict(row)
-
-    return lookup
+    return {
+        row["id"]: row
+        for row in rows
+    }
