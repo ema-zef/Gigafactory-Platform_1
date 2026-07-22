@@ -1,4 +1,4 @@
-from sqlalchemy import text
+from sqlalchemy import create_engine, text
 from fastapi import HTTPException
 from config import DATABASE_URL
 
