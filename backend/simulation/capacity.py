@@ -204,8 +204,6 @@ def calculate_required_material_flow(
 
         simulation.append({
 
-            "equipment_id": equipment.equipment_id,
-
             "technology_id": equipment.technology_id,
 
             "technology_name": equipment.technology_name,
