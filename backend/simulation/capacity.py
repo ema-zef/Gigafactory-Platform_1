@@ -196,7 +196,7 @@ def calculate_required_material_flow(
         # DEFAULT
         # -----------------------------------------
 
-                else:
+        else:
 
             output = required_cells
             input_required = required_input_cells
