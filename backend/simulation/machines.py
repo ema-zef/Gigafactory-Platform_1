@@ -39,15 +39,16 @@ def calculate_machines(
 
     )
 
-    daily_capacity = (
-
-        equipment["speed_m_min"]
-
-        *
-
-        available_minutes
-
-    )
+    if equipment["speed_m_min"] is not None:
+        daily_capacity = (
+            equipment["speed_m_min"]
+            * available_minutes
+       )
+    else:
+        daily_capacity = (
+            available_minutes
+            / equipment["processingtime_min"]
+        )
 
     machines = math.ceil(
 
