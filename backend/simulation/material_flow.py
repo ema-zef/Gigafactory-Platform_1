@@ -1,6 +1,6 @@
 simulation.append({
 
-    "technology_id": equipment["technology_id"],
+    "equipment_id": equipment["equipment_id"],
 
     "technology_name": equipment["technology_name"],
 

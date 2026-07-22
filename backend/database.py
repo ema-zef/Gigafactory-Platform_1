@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine, text, bindparam
 from fastapi import HTTPException
 from config import DATABASE_URL
 
@@ -875,17 +875,23 @@ def load_production_configuration(plant_code):
 
 def load_equipment(ids):
 
+    if not ids:
+        return {}
+
     with engine.connect() as conn:
 
-        rows = conn.execute(
+        stmt = (
             text("""
                 SELECT *
                 FROM equipment
                 WHERE id IN :ids
-            """),
-            {
-                "ids": tuple(ids)
-            }
+            """)
+            .bindparams(bindparam("ids", expanding=True))
+        )
+
+        rows = conn.execute(
+            stmt,
+            {"ids": ids}
         ).mappings().all()
 
     return {

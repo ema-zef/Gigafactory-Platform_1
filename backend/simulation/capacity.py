@@ -202,25 +202,27 @@ def calculate_required_material_flow(
             input_required = required_input_cells
             unit = "units/day"
 
-        simulation.append({
+simulation.append({
 
-            "technology_id": equipment["technology_id"],
+    "equipment_id": equipment["equipment_id"],
 
-            "technology_name": equipment["technology_name"],
+    "technology_id": equipment["technology_id"],
 
-            "process": equipment["process"],
+    "technology_name": equipment["technology_name"],
 
-            "category": category,
+    "process": equipment["process"],
 
-            "quality_rate": equipment["quality_rate"],
+    "category": category,
 
-            "unit": unit,
+    "quality_rate": equipment["quality_rate"],
 
-            "required_output": round(output, 2),
+    "unit": unit,
 
-            "required_input": round(input_required, 2)
+    "required_output": round(output,2),
 
-        })
+    "required_input": round(input_required,2)
+
+})
 
         required_cells = required_input_cells
 
