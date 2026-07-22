@@ -70,11 +70,7 @@ def run(request):
 
     for tech in technologies:
 
-        equipment_lookup = load_equipment(
-
-            [step.technology_id for step in route]
-
-        )
+        equipment = equipment_lookup[tech["technology_id"]]
 
         machines = calculate_machines(
             tech["required_output"],
