@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, text
+from sqlalchemy import text
 from fastapi import HTTPException
 from config import DATABASE_URL
 
@@ -874,21 +874,27 @@ def load_production_configuration(plant_code):
 # ----------------------------------
 
 def load_equipment(ids):
-    
+
     with engine.connect() as conn:
-        
-        return conn.execute(
+
+        rows = conn.execute(
 
             text("""
-                SELECT
-                no_operators_min,
-                no_operators_max
+                SELECT *
                 FROM equipment
-                WHERE id = :equipment_id
+                WHERE technology_id IN :ids
             """),
 
             {
-             "equipment_id": equipment["technology_id"]
+                "ids": tuple(ids)
             }
 
-        ).mappings().first()
+        ).mappings().all()
+
+    lookup = {}
+
+    for row in rows:
+
+        lookup[row["technology_id"]] = dict(row)
+
+    return lookup
