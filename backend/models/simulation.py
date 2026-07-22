@@ -3,7 +3,6 @@ from pydantic import BaseModel
 class RouteStep(BaseModel):
     technology_id: int
     technology_name: str
-    equipment_id: int
     process: str
     process_category: str
     quality_rate: float
