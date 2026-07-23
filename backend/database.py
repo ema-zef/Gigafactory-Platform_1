@@ -893,6 +893,9 @@ def load_equipment(ids):
             stmt,
             {"ids": ids}
         ).mappings().all()
+        
+    print(rows[0].keys())
+    print(rows[0])
 
     return {
         row["id"]: row

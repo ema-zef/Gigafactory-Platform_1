@@ -39,29 +39,19 @@ def calculate_machines(
 
     )
 
-    if equipment["process_category"].upper() == "ROLL":
-        speed = equipment["speed_m_min"]
+    speed = equipment["speed_m_min"]
+    processing_time = equipment["processingtime_min"]
 
-        if speed is None or speed <= 0:
-            raise ValueError(
-                f"{equipment['technology_name']} has invalid speed_m_min: {speed}"
-            )
-
+    if speed is not None and speed > 0:
         daily_capacity = speed * available_minutes
 
+    elif processing_time is not None and processing_time > 0:
+         daily_capacity = available_minutes / processing_time
+
     else:
-        processing_time = equipment["processingtime_min"]
-
-        if processing_time is None or processing_time <= 0:
-            raise ValueError(
-                f"{equipment['technology_name']} has invalid processingtime_min: {processing_time}"
-            )
-
-        daily_capacity = available_minutes / processing_time
-
-    if daily_capacity <= 0:
         raise ValueError(
-            f"Daily capacity is {daily_capacity} for {equipment['technology_name']}"
+            f"{equipment['technology_name']} has neither a valid speed_m_min "
+            f"nor processingtime_min."
         )
 
     machines = math.ceil(output_required / daily_capacity)
