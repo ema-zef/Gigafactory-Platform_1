@@ -39,7 +39,7 @@ def calculate_machines(
 
     )
 
-    if equipment["category"].upper() == "ROLL":
+    if equipment["process_category"].upper() == "ROLL":
         speed = equipment["speed_m_min"]
 
         if speed is None or speed <= 0:
