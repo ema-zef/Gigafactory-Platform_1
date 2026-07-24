@@ -100,11 +100,18 @@ def run(request):
             energy,
             production,
         )
+        
+        batches = calculate_batches(
+            tech["required_output"],
+            equipment,
+            production,
+        )
 
         tech["machines"] = machines
         tech["operators"] = operators
         tech["energy"] = energy
         tech["costs"] = costs
+        tech["carbon"] = carbon
         tech["carbon"] = carbon
 
         total_machines += machines["machines"]

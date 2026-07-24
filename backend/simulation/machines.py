@@ -55,10 +55,14 @@ def calculate_machines(
         )
 
     machines = math.ceil(output_required / daily_capacity)
+    
+    batches = math.ceil(output_required / daily_capacity)
 
     return {
         "machines": machines,
 
-        "uptime": uptime
+        "uptime": uptime,
+        
+        "batches": batches
 
     }
