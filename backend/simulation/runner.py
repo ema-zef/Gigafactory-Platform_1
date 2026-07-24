@@ -136,8 +136,8 @@ def run(request):
         "plant": {
             "plant_code": request.plant_code,
             "hours_per_shift": production["hours_per_shift"],
-            "shifts_per_day": production["shifts_per_day"],
-            "uptime": production["uptime"],
+            "shifts_per_day": production["no_of_shifts_per_day"],
+            "available_time_min": production["available_time_min"],
         },
 
         "product": {
