@@ -117,6 +117,9 @@ def run(request):
     # Bottleneck
     # ----------------------------------
 
+    print(type(technologies))
+    print(technologies)
+
     bottleneck = identify_bottleneck(technologies)
 
     # ----------------------------------
