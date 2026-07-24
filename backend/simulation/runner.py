@@ -118,10 +118,11 @@ def run(request):
     # ----------------------------------
 
     for t in technologies:
-    print(
-        t["technology_name"],
-        type(t["machines"]),
-        t["machines"]
+        print(
+            t["technology_name"],
+            t.keys(),
+            t["machines"],
+            type(t["machines"])
     )
 
     bottleneck = identify_bottleneck(technologies)
