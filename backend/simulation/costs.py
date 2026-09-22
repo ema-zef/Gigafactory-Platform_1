@@ -1,4 +1,4 @@
-ddef calculate_costs(
+def calculate_costs(
     machines,
     operators,
     energy,

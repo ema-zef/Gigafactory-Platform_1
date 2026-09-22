@@ -137,22 +137,7 @@ def calculate_required_material_flow(
         # CELL PROCESS
         # =================================================
 
-        if category == "CELL":
-
-            output = required_cells
-
-            input_required = (
-                required_input_cells
-            )
-
-            unit = "cells/day"
-
-
-        # =================================================
-        # CATHODE ROLL
-        # =================================================
-
-        elif category == "CATHODE_ROLL":
+elif category == "CATHODE_ROLL":
 
     roll_length = (
         required_cells
@@ -161,26 +146,17 @@ def calculate_required_material_flow(
         / 1000
     )
 
-    # Account for process yield
-    required_roll_length = (
-        roll_length / quality
-    )
+    required_roll_length = roll_length / quality
 
     output = required_roll_length
     input_required = required_roll_length
     unit = "m/day"
 
-    # ----------------------------------
-    # Current collector introduced
-    # at coating
-    # ----------------------------------
-
     process = (
         equipment.process or ""
     ).strip().upper()
 
-    if process == "COATING & DRYING":
-
+    if process == "COATING":
         collector_width_m = float(
             product["cath_coll_width_m"]
         )
