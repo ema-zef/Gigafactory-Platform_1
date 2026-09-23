@@ -1,153 +1,49 @@
 import math
 
+def calculate_machines(output_required, equipment, production):
+    hours_per_shift = float(production["hours_per_shift"])
+    shifts = int(production["no_of_shifts_per_day"])
+    available_hours_year = float(production["available_time_min"])
 
-def calculate_machines(
-    output_required,
-    equipment,
-    production
-):
+    if hours_per_shift <= 0 or shifts <= 0 or available_hours_year <= 0:
+        raise ValueError("Production time values must be greater than 0.")
 
-    # ----------------------------------
-    # Production parameters
-    # ----------------------------------
+    scheduled_hours_year = hours_per_shift * shifts * 365
+    uptime = available_hours_year / scheduled_hours_year
+    available_hours_day = available_hours_year / 365
+    available_minutes_day = available_hours_day * 60
 
-    hours_per_shift = float(
-        production["hours_per_shift"]
-    )
-
-    shifts = int(
-        production["no_of_shifts_per_day"]
-    )
-
-    available_minutes = float(
-        production["available_time_min"]
-    )
-
-    if hours_per_shift <= 0:
-        raise ValueError(
-            "hours_per_shift must be greater than 0."
-        )
-
-    if shifts <= 0:
-        raise ValueError(
-            "no_of_shifts_per_day must be greater than 0."
-        )
-
-    if available_minutes <= 0:
-        raise ValueError(
-            "available_time_min must be greater than 0."
-        )
-
-    # ----------------------------------
-    # Utilisation / uptime
-    # ----------------------------------
-
-    scheduled_minutes = (
-        hours_per_shift
-        * shifts
-        * 60
-    )
-
-    uptime = (
-        available_minutes
-        / scheduled_minutes
-    )
-
-    # ----------------------------------
-    # Equipment parameters
-    # ----------------------------------
-
-    category = (
-        equipment["process_category"] or ""
-    ).upper()
-
+    category = (equipment["process_category"] or "").strip().upper()
     speed = equipment["speed_m_min"]
-
     processing_time = equipment["processingtime_min"]
-    
-    capacity = equipment["Capacity"]
+    capacity = equipment["capacity"]
 
-    # ----------------------------------
-    # Capacity calculation
-    # ----------------------------------
-
-    if category == "ROLL":
-
+    if category in ("ROLL", "CATHODE_ROLL", "ANODE_ROLL"):
         if speed is None or float(speed) <= 0:
-            raise ValueError(
-                f"{equipment['technology_name']} is ROLL equipment "
-                f"but has invalid speed_m_min: {speed}"
-            )
-
-        speed = float(speed)
-
-        daily_capacity = (
-            speed
-            * available_minutes
-        )
-
-        # Continuous process
+            raise ValueError(f"{equipment['technology_name']} has invalid speed_m_min: {speed}")
+        daily_capacity = float(speed) * available_minutes_day
         batches = None
-
     else:
-
-        if (
-            processing_time is None
-            or float(processing_time) <= 0
-        ):
-            raise ValueError(
-                f"{equipment['technology_name']} has invalid "
-                f"processingtime_min: {processing_time}"
-            )
-
-        processing_time = float(
-            processing_time
-        )
-
-        daily_capacity = ((
-            available_minutes
-            * capacity
-            )
-            / processing_time
-        )
-
-        # Only MASS processes are treated
-        # as batch processes for now.
-        if category == "MASS":
-            batches = math.ceil(
-                available_minutes
-            / processing_time
-            )
-        else:
-            batches = None
-
-    # ----------------------------------
-    # Safety check
-    # ----------------------------------
+        if processing_time is None or float(processing_time) <= 0:
+            raise ValueError(f"{equipment['technology_name']} has invalid processingtime_min: {processing_time}")
+        if capacity is None or float(capacity) <= 0:
+            raise ValueError(f"{equipment['technology_name']} has invalid capacity: {capacity}")
+        processing_time = float(processing_time)
+        capacity = float(capacity)
+        daily_capacity = available_minutes_day * capacity / processing_time
+        batches = math.ceil(available_minutes_day / processing_time) if category in ("MASS", "CATHODE_MASS", "ANODE_MASS") else None
 
     if daily_capacity <= 0:
-        raise ValueError(
-            f"Calculated daily capacity is {daily_capacity} "
-            f"for {equipment['technology_name']}."
-        )
+        raise ValueError(f"Calculated daily capacity is {daily_capacity} for {equipment['technology_name']}.")
 
-    # ----------------------------------
-    # Machine requirement
-    # ----------------------------------
-
-    machines = math.ceil(
-        output_required
-        / daily_capacity
-    )
-
-    # ----------------------------------
-    # Return
-    # ----------------------------------
+    machine_count = math.ceil(float(output_required) / daily_capacity)
 
     return {
-        "machines": machines,
+        "machines": machine_count,
         "batches": batches,
         "shifts": shifts,
-        "uptime": uptime,
-        "daily_capacity_per_machine": daily_capacity
+        "uptime": round(uptime, 6),
+        "available_hours_year": available_hours_year,
+        "available_hours_day": round(available_hours_day, 6),
+        "daily_capacity_per_machine": daily_capacity,
     }
