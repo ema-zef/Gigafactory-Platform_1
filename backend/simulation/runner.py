@@ -126,40 +126,48 @@ def run(request):
     # =========================================================
 
     for tech in technologies:
-
         equipment = equipment_lookup[
             tech["technology_id"]
         ]
 
-
-    print(
-    "MACHINE INPUT:",
-    {
-        "technology_id":
-            equipment["id"],
-
-        "technology_name":
-            equipment["technology_name"],
-
-        "process":
-            equipment["process"],
-
-        "category":
-            equipment["process_category"],
-
-        "capacity":
-            equipment["capacity"],
-
-        "speed_m_min":
-            equipment["speed_m_min"],
-
-        "processingtime_min":
-            equipment["processingtime_min"],
-
-        "required_output":
+        machines = calculate_machines(
             tech["required_output"],
-    }
-)
+            equipment,
+            production,
+        )
+
+        operators = calculate_operators(
+            machines["machines"],
+            equipment,
+        )
+
+        energy = calculate_energy(
+            machines,
+            equipment,
+            production,
+        )
+
+        costs = calculate_costs(
+            machines,
+            operators,
+            energy,
+            equipment,
+            production,
+        )
+
+        carbon = calculate_carbon(
+            energy,
+            production,
+        )
+
+        tech["machines"] = machines
+        tech["batches"] = machines.get("batches")
+        tech["shifts"] = machines.get("shifts")
+        tech["operators"] = operators
+        tech["energy"] = energy
+        tech["costs"] = costs
+        tech["carbon"] = carbon
+    
         # -----------------------------------------------------
         # Machines / batches / shifts
         # -----------------------------------------------------
