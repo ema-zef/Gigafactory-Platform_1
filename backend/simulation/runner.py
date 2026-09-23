@@ -31,6 +31,16 @@ def run(request):
     production = load_production_configuration(
         request.plant_code
     )
+    
+    print(
+        "PRODUCTION COLUMNS:",
+        production.keys()
+    )
+
+    print(
+         "PRODUCTION CONFIG:",
+         dict(production)
+    )
 
     route = (
         request.cathode_route
