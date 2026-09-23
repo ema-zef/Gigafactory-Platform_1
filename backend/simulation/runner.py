@@ -132,6 +132,34 @@ def run(request):
         ]
 
 
+    print(
+    "MACHINE INPUT:",
+    {
+        "technology_id":
+            equipment["id"],
+
+        "technology_name":
+            equipment["technology_name"],
+
+        "process":
+            equipment["process"],
+
+        "category":
+            equipment["process_category"],
+
+        "capacity":
+            equipment["capacity"],
+
+        "speed_m_min":
+            equipment["speed_m_min"],
+
+        "processingtime_min":
+            equipment["processingtime_min"],
+
+        "required_output":
+            tech["required_output"],
+    }
+)
         # -----------------------------------------------------
         # Machines / batches / shifts
         # -----------------------------------------------------
