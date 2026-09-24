@@ -62,7 +62,7 @@ def _reverse_route(steps, finished_output, unit, branch):
 def _electrode_geometry(product, side):
     electrode_count = _number(product, "number_of_electrodes_in_cell", positive=True)
     length_m = _number(product, f"{side}_length_mm", positive=True) / 1000
-    width_key = "cath_coll_width_m" if side == "cathode" else "anode_coll_width_m"
+    width_key = "cathode_coll_width_m" if side == "cathode" else "anode_coll_width_m"
     width_m = _number(product, width_key, positive=True)
     loading_key = "mass_load_cath_kg_m2" if side == "cathode" else "mass_load_anode_kg_m2"
     loading = _number(product, loading_key, positive=True)
