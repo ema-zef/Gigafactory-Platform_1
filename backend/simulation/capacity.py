@@ -1,7 +1,4 @@
 """Daily capacity and independent cathode/anode/assembly material flows."""
-from fastapi import HTTPException
-
-
 def _number(row, key, *, positive=False, default=None):
     value = row.get(key) if hasattr(row, "get") else row[key]
     if value is None:
@@ -60,16 +57,49 @@ def _reverse_route(steps, finished_output, unit, branch):
 
 
 def _electrode_geometry(product, side):
-    electrode_count = _number(product, "number_of_electrodes_in_cell", positive=True)
-    length_m = _number(product, f"{side}_length_mm", positive=True) / 1000
-    width_key = "cathode_coll_width_m" if side == "cathode" else "anode_coll_width_m"
-    width_m = _number(product, width_key, positive=True)
-    loading_key = "mass_load_cath_kg_m2" if side == "cathode" else "mass_load_anode_kg_m2"
-    loading = _number(product, loading_key, positive=True)
-    return electrode_count * length_m, width_m, loading
+    """Return electrode geometry using the product's stored metre values.
+
+    The legacy *_mm column names are retained in the database, but their
+    values are already metres. Coating loading applies to coated electrode
+    area; collector mass applies to the full collector-web area.
+    """
+    if side == "cathode":
+        length_key = "cathode_length_mm"
+        coated_width_key = "cathode_width_mm"
+        collector_width_key = "cathode_coll_width_m"
+        loading_key = "mass_load_cath_kg_m2"
+    elif side == "anode":
+        length_key = "anode_length_mm"
+        coated_width_key = "anode_width_mm"
+        collector_width_key = "anode_coll_width_m"
+        loading_key = "mass_load_anode_kg_m2"
+    else:
+        raise ValueError(f"Unknown electrode side: {side}")
+
+    electrodes_per_cell = _number(
+        product, "number_of_electrodes_in_cell", positive=True
+    )
+    length_m = _number(product, length_key, positive=True)
+    coated_width_m = _number(product, coated_width_key, positive=True)
+    collector_width_m = _number(product, collector_width_key, positive=True)
+    loading_kg_m2 = _number(product, loading_key, positive=True)
+
+    metres_per_cell = electrodes_per_cell * length_m
+    coated_area_per_cell_m2 = metres_per_cell * coated_width_m
+    collector_area_per_cell_m2 = metres_per_cell * collector_width_m
+    dry_coating_kg_per_cell = coated_area_per_cell_m2 * loading_kg_m2
+
+    return {
+        "metres_per_cell": metres_per_cell,
+        "coated_width_m": coated_width_m,
+        "collector_width_m": collector_width_m,
+        "coated_area_per_cell_m2": coated_area_per_cell_m2,
+        "collector_area_per_cell_m2": collector_area_per_cell_m2,
+        "dry_coating_kg_per_cell": dry_coating_kg_per_cell,
+    }
 
 
-def _electrode_materials(product, side, wet_slurry_kg, collector_length_m, width_m, materials):
+def _electrode_materials(product, side, wet_slurry_kg, collector_length_m, collector_width_m, materials):
     prefix = side
     active = _number(product, f"{prefix}_am_w%") / 100
     additive = _number(product, f"{prefix}_additive_w%") / 100
@@ -88,7 +118,7 @@ def _electrode_materials(product, side, wet_slurry_kg, collector_length_m, width
     materials[f"{prefix}_solvent_kg"] = round(wet_slurry_kg - dry_kg, 4)
     collector_key = "cathode_coll_kg_m2" if side == "cathode" else "anode_coll_kg_m2"
     collector_kg_m2 = _number(product, collector_key, positive=True)
-    materials[f"{prefix}_collector_kg"] = round(collector_length_m * width_m * collector_kg_m2, 4)
+    materials[f"{prefix}_collector_kg"] = round(collector_length_m * collector_width_m * collector_kg_m2, 4)
 
 
 def calculate_required_material_flow(
@@ -135,14 +165,14 @@ def calculate_required_material_flow(
     )
     branch_results = []
     for side, steps in (("cathode", cathode_route), ("anode", anode_route)):
-        metres_per_cell, width_m, loading_kg_m2 = _electrode_geometry(product, side)
-        assembly_input_length = assembly_input_cells * metres_per_cell
+        geometry = _electrode_geometry(product, side)
+        assembly_input_length = assembly_input_cells * geometry["metres_per_cell"]
         roll_steps = [s for s in steps if (_step_value(s, "process_category") or "").upper() == "ROLL"]
         mass_steps = [s for s in steps if (_step_value(s, "process_category") or "").upper() == "MASS"]
         if not roll_steps or not mass_steps:
             raise ValueError(f"{side} route needs MASS mixing and ROLL equipment")
 
-        roll_results, roll_input_length = _reverse_route(
+        roll_results, _roll_input_length = _reverse_route(
             roll_steps, assembly_input_length, "m/day", side
         )
         # Coating introduces the collector. Its input web length is the
@@ -155,7 +185,15 @@ def calculate_required_material_flow(
         collector_length = coating["required_input"]
 
         # Wet slurry must cover the coating input web, including coating yield.
-        dry_coating_kg = collector_length * width_m * loading_kg_m2
+        dry_coating_kg = (
+            collector_length
+            * geometry["coated_width_m"]
+            * _number(
+                product,
+                "mass_load_cath_kg_m2" if side == "cathode" else "mass_load_anode_kg_m2",
+                positive=True,
+            )
+        )
         solids_key = f"{side}_solid_content_min_w%"
         solids = _number(product, solids_key, positive=True) / 100
         if not 0 < solids <= 1:
@@ -165,7 +203,8 @@ def calculate_required_material_flow(
             mass_steps, slurry_for_coating_kg, "kg/day", side
         )
         _electrode_materials(
-            product, side, wet_slurry_input, collector_length, width_m, materials
+            product, side, wet_slurry_input, collector_length,
+            geometry["collector_width_m"], materials
         )
         # Keep the original user-defined order within each branch.
         by_id = {s["technology_id"]: s for s in mass_results + roll_results}
