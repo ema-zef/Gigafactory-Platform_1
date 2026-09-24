@@ -88,6 +88,9 @@ def run(request):
         "material_requirements"
     ]
 
+    # Optional for compatibility with capacity.py versions without geometry.
+    geometry = flow.get("geometry")
+
 
     # =========================================================
     # Material costs
@@ -316,6 +319,9 @@ def run(request):
 
         "material_requirements":
             material_requirements,
+
+        # Electrode geometry and coating/collector breakdown.
+        "geometry": geometry,
 
 
         # -----------------------------------------------------
