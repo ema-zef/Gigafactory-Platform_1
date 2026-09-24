@@ -1,265 +1,188 @@
+"""Daily capacity and independent cathode/anode/assembly material flows."""
 from fastapi import HTTPException
 
 
+def _number(row, key, *, positive=False, default=None):
+    value = row.get(key) if hasattr(row, "get") else row[key]
+    if value is None:
+        if default is not None:
+            return default
+        raise ValueError(f"Missing product/production field: {key}")
+    number = float(value)
+    if positive and number <= 0:
+        raise ValueError(f"{key} must be greater than zero; received {value}")
+    return number
+
+
 def calculate_capacity(product, production):
-    cell_capacity = float(product["cell_capacity_kwh"])
-    annual_energy_kwh = float(production["annual_output_kwh"]) * 1_000_000
-
-    if cell_capacity <= 0:
-        raise HTTPException(
-            status_code=400,
-            detail="Cell capacity must be greater than zero.",
-        )
-
-    required_good_cells_year = annual_energy_kwh / cell_capacity
-    required_good_cells_day = required_good_cells_year / 365
-
+    cell_capacity = _number(product, "cell_capacity_kwh", positive=True)
+    annual_energy_kwh = _number(production, "annual_output_kwh", positive=True) * 1_000_000
+    good_cells_year = annual_energy_kwh / cell_capacity
     return {
         "annual_energy_kwh": annual_energy_kwh,
-        "required_good_cells_year": required_good_cells_year,
-        "required_good_cells_day": required_good_cells_day,
+        "required_good_cells_year": good_cells_year,
+        "required_good_cells_day": good_cells_year / 365,
     }
+
+
+def _step_value(step, name, default=None):
+    if isinstance(step, dict):
+        return step.get(name, default)
+    return getattr(step, name, default)
+
+
+def _reverse_route(steps, finished_output, unit, branch):
+    """Reverse one independent branch; quantities share the specified unit."""
+    required_output = finished_output
+    results = []
+    for step in reversed(steps):
+        quality_percent = float(_step_value(step, "quality_rate", 100) or 0)
+        if not 0 < quality_percent <= 100:
+            raise ValueError(
+                f"Invalid quality_rate={quality_percent} for "
+                f"{_step_value(step, 'technology_name', 'unknown technology')}"
+            )
+        required_input = required_output / (quality_percent / 100)
+        results.append({
+            "technology_id": _step_value(step, "technology_id"),
+            "technology_name": _step_value(step, "technology_name"),
+            "process": _step_value(step, "process"),
+            "category": _step_value(step, "process_category"),
+            "branch": branch,
+            "quality_rate": quality_percent,
+            "unit": unit,
+            "required_output": round(required_output, 6),
+            "required_input": round(required_input, 6),
+        })
+        required_output = required_input
+    results.reverse()
+    return results, required_output
+
+
+def _electrode_geometry(product, side):
+    electrode_count = _number(product, "number_of_electrodes_in_cell", positive=True)
+    length_m = _number(product, f"{side}_length_mm", positive=True) / 1000
+    width_key = "cath_coll_width_m" if side == "cathode" else "anode_coll_width_m"
+    width_m = _number(product, width_key, positive=True)
+    loading_key = "mass_load_cath_kg_m2" if side == "cathode" else "mass_load_anode_kg_m2"
+    loading = _number(product, loading_key, positive=True)
+    return electrode_count * length_m, width_m, loading
+
+
+def _electrode_materials(product, side, wet_slurry_kg, collector_length_m, width_m, materials):
+    prefix = side
+    active = _number(product, f"{prefix}_am_w%") / 100
+    additive = _number(product, f"{prefix}_additive_w%") / 100
+    binder = _number(product, f"{prefix}_binder_w%") / 100
+    solids = _number(product, f"{prefix}_solid_content_min_w%", positive=True) / 100
+    if not 0 < solids <= 1:
+        raise ValueError(f"Invalid {prefix} solid content: {solids * 100}%")
+    if any(x < 0 or x > 1 for x in (active, additive, binder)):
+        raise ValueError(f"Invalid {prefix} dry composition fractions")
+    if abs(active + additive + binder - 1) > 0.02:
+        raise ValueError(f"{prefix} dry composition must sum to approximately 100%")
+    dry_kg = wet_slurry_kg * solids
+    materials[f"{prefix}_active_material_kg"] = round(dry_kg * active, 4)
+    materials[f"{prefix}_additive_kg"] = round(dry_kg * additive, 4)
+    materials[f"{prefix}_binder_kg"] = round(dry_kg * binder, 4)
+    materials[f"{prefix}_solvent_kg"] = round(wet_slurry_kg - dry_kg, 4)
+    collector_key = "cathode_coll_kg_m2" if side == "cathode" else "anode_coll_kg_m2"
+    collector_kg_m2 = _number(product, collector_key, positive=True)
+    materials[f"{prefix}_collector_kg"] = round(collector_length_m * width_m * collector_kg_m2, 4)
 
 
 def calculate_required_material_flow(
-    route,
-    product,
-    required_good_cells_day,
+    route=None,
+    product=None,
+    required_good_cells_day=None,
+    *,
+    cathode_route=None,
+    anode_route=None,
+    assembly_route=None,
 ):
-    """Perform the backward material-flow calculation."""
+    """Calculate independent branches and return the existing dashboard schema.
 
-    required_cells = float(required_good_cells_day)
-    simulation = []
+    Each electrode branch ends at the assembly input. Product loading is
+    assumed to be dry coating kg/m² and mixing capacity wet slurry kg/cycle.
+    Confirm these source-data units before treating machine counts as validated.
+    """
+    if route is not None and any(x is None for x in (cathode_route, anode_route, assembly_route)):
+        raise ValueError("Pass cathode_route, anode_route and assembly_route separately, not one serial route")
+    if product is None or required_good_cells_day is None:
+        raise ValueError("product and required_good_cells_day are required")
+    cathode_route = cathode_route or []
+    anode_route = anode_route or []
+    assembly_route = assembly_route or []
+    if not cathode_route or not anode_route or not assembly_route:
+        raise ValueError("Cathode, anode and assembly routes must each contain equipment")
 
-    material_requirements = {
-        "number_of_cells": required_good_cells_day,
-        "cathode_active_material_kg": 0,
-        "cathode_solvent_kg": 0,
-        "cathode_additive_kg": 0,
-        "cathode_binder_kg": 0,
-        "cathode_collector_kg": 0,
-        "anode_active_material_kg": 0,
-        "anode_solvent_kg": 0,
-        "anode_additive_kg": 0,
-        "anode_binder_kg": 0,
-        "anode_collector_kg": 0,
-        "separator_kg": 0,
-        "electrolyte_kg": 0,
-        "housing_kg": 0,
-        "housing_units": required_good_cells_day,
-        "sealing_units": required_good_cells_day,
+    good_cells = float(required_good_cells_day)
+    if good_cells <= 0:
+        raise ValueError("required_good_cells_day must be positive")
+    materials = {
+        "number_of_cells": good_cells,
+        "cathode_active_material_kg": 0, "cathode_solvent_kg": 0,
+        "cathode_additive_kg": 0, "cathode_binder_kg": 0,
+        "cathode_collector_kg": 0, "anode_active_material_kg": 0,
+        "anode_solvent_kg": 0, "anode_additive_kg": 0,
+        "anode_binder_kg": 0, "anode_collector_kg": 0,
+        "separator_kg": 0, "electrolyte_kg": 0, "housing_kg": 0,
+        "housing_units": good_cells, "sealing_units": good_cells,
     }
 
-    for equipment in reversed(route):
-        quality = float(equipment.quality_rate) / 100
+    assembly_results, assembly_input_cells = _reverse_route(
+        assembly_route, good_cells, "cells/day", "assembly"
+    )
+    branch_results = []
+    for side, steps in (("cathode", cathode_route), ("anode", anode_route)):
+        metres_per_cell, width_m, loading_kg_m2 = _electrode_geometry(product, side)
+        assembly_input_length = assembly_input_cells * metres_per_cell
+        roll_steps = [s for s in steps if (_step_value(s, "process_category") or "").upper() == "ROLL"]
+        mass_steps = [s for s in steps if (_step_value(s, "process_category") or "").upper() == "MASS"]
+        if not roll_steps or not mass_steps:
+            raise ValueError(f"{side} route needs MASS mixing and ROLL equipment")
 
-        if quality <= 0:
-            quality = 1.0
-
-        required_input_cells = required_cells / quality
-        category = equipment.process_category
-        process = (equipment.process or "").strip().upper()
-
-        if category == "CELL":
-            output = required_cells
-            input_required = required_input_cells
-            unit = "cells/day"
-
-        elif category == "CATHODE_ROLL":
-            roll_length = (
-                required_cells
-                * float(product["number_of_electrodes_in_cell"])
-                * float(product["cathode_length_mm"])
-                / 1000
-            )
-
-            required_roll_length = roll_length / quality
-            output = required_roll_length
-            input_required = required_roll_length
-            unit = "m/day"
-
-            # Current collector enters at coating.
-            if process in ("COATING", "COATING & DRYING"):
-                collector_width_m = float(product["cath_coll_width_m"])
-                collector_kg_m2 = float(product["cathode_coll_kg_m2"])
-
-                collector_area_m2 = (
-                    required_roll_length * collector_width_m
-                )
-
-                material_requirements["cathode_collector_kg"] = round(
-                    collector_area_m2 * collector_kg_m2,
-                    4,
-                )
-
-        elif category == "ANODE_ROLL":
-            roll_length = (
-                required_cells
-                * float(product["number_of_electrodes_in_cell"])
-                * float(product["anode_length_mm"])
-                / 1000
-            )
-
-            required_roll_length = roll_length / quality
-            output = required_roll_length
-            input_required = required_roll_length
-            unit = "m/day"
-
-            # Current collector enters at coating.
-            if process in ("COATING", "COATING & DRYING"):
-                collector_width_m = float(product["anode_coll_width_m"])
-                collector_kg_m2 = float(product["anode_coll_kg_m2"])
-
-                collector_area_m2 = (
-                    required_roll_length * collector_width_m
-                )
-
-                material_requirements["anode_collector_kg"] = round(
-                    collector_area_m2 * collector_kg_m2,
-                    4,
-                )
-
-        elif category == "CATHODE_MASS":
-            roll_length = (
-                required_cells
-                * float(product["number_of_electrodes_in_cell"])
-                * float(product["cathode_length_mm"])
-                / 1000
-            )
-
-            dry_cathode_mass = (
-                roll_length
-                * float(product["cath_coll_width_m"])
-                * float(product["mass_load_cath_kg_m2"])
-            ) / quality
-
-            output = dry_cathode_mass
-            input_required = dry_cathode_mass
-            unit = "kg/day"
-
-            active_fraction = float(product["cathode_am_w%"]) / 100
-            additive_fraction = float(product["cathode_additive_w%"]) / 100
-            binder_fraction = float(product["cathode_binder_w%"]) / 100
-            solid_fraction = (
-                float(product["cathode_solid_content_min_w%"]) / 100
-            )
-
-            if solid_fraction <= 0 or solid_fraction > 1:
-                raise ValueError(
-                    "Invalid cathode solid content: "
-                    f"{product['cathode_solid_content_min_w%']}"
-                )
-
-            material_requirements["cathode_active_material_kg"] = round(
-                dry_cathode_mass * active_fraction, 4
-            )
-            material_requirements["cathode_additive_kg"] = round(
-                dry_cathode_mass * additive_fraction, 4
-            )
-            material_requirements["cathode_binder_kg"] = round(
-                dry_cathode_mass * binder_fraction, 4
-            )
-
-            wet_cathode_mass = dry_cathode_mass / solid_fraction
-            material_requirements["cathode_solvent_kg"] = round(
-                wet_cathode_mass - dry_cathode_mass, 4
-            )
-
-        elif category == "ANODE_MASS":
-            roll_length = (
-                required_cells
-                * float(product["number_of_electrodes_in_cell"])
-                * float(product["anode_length_mm"])
-                / 1000
-            )
-
-            dry_anode_mass = (
-                roll_length
-                * float(product["anode_coll_width_m"])
-                * float(product["mass_load_anode_kg_m2"])
-            ) / quality
-
-            output = dry_anode_mass
-            input_required = dry_anode_mass
-            unit = "kg/day"
-
-            active_fraction = float(product["anode_am_w%"]) / 100
-            additive_fraction = float(product["anode_additive_w%"]) / 100
-            binder_fraction = float(product["anode_binder_w%"]) / 100
-            solid_fraction = (
-                float(product["anode_solid_content_min_w%"]) / 100
-            )
-
-            if solid_fraction <= 0 or solid_fraction > 1:
-                raise ValueError(
-                    "Invalid anode solid content: "
-                    f"{product['anode_solid_content_min_w%']}"
-                )
-
-            material_requirements["anode_active_material_kg"] = round(
-                dry_anode_mass * active_fraction, 4
-            )
-            material_requirements["anode_additive_kg"] = round(
-                dry_anode_mass * additive_fraction, 4
-            )
-            material_requirements["anode_binder_kg"] = round(
-                dry_anode_mass * binder_fraction, 4
-            )
-
-            wet_anode_mass = dry_anode_mass / solid_fraction
-            material_requirements["anode_solvent_kg"] = round(
-                wet_anode_mass - dry_anode_mass, 4
-            )
-
-        else:
-            output = required_cells
-            input_required = required_input_cells
-            unit = "units/day"
-
-        simulation.append(
-            {
-                "technology_id": equipment.technology_id,
-                "technology_name": equipment.technology_name,
-                "process": equipment.process,
-                "category": category,
-                "quality_rate": equipment.quality_rate,
-                "unit": unit,
-                "required_output": round(output, 2),
-                "required_input": round(input_required, 2),
-            }
+        roll_results, roll_input_length = _reverse_route(
+            roll_steps, assembly_input_length, "m/day", side
         )
+        # Coating introduces the collector. Its input web length is the
+        # purchased collector requirement; earlier roll steps are not counted twice.
+        coating = next(
+            (s for s in roll_results if "COAT" in (s["process"] or "").upper()), None
+        )
+        if coating is None:
+            raise ValueError(f"{side} route has no coating step")
+        collector_length = coating["required_input"]
 
-        required_cells = required_input_cells
+        # Wet slurry must cover the coating input web, including coating yield.
+        dry_coating_kg = collector_length * width_m * loading_kg_m2
+        solids_key = f"{side}_solid_content_min_w%"
+        solids = _number(product, solids_key, positive=True) / 100
+        if not 0 < solids <= 1:
+            raise ValueError(f"Invalid {solids_key}: {solids * 100}%")
+        slurry_for_coating_kg = dry_coating_kg / solids
+        mass_results, wet_slurry_input = _reverse_route(
+            mass_steps, slurry_for_coating_kg, "kg/day", side
+        )
+        _electrode_materials(
+            product, side, wet_slurry_input, collector_length, width_m, materials
+        )
+        # Keep the original user-defined order within each branch.
+        by_id = {s["technology_id"]: s for s in mass_results + roll_results}
+        branch_results.extend(by_id[_step_value(s, "technology_id")] for s in steps)
 
-    simulation.reverse()
-
-    # Cell-level material requirements.
-    number_of_cells = float(required_good_cells_day)
-
-    electrolyte_g_per_cell = float(
-        product.get("electrolite_g_cell_min") or 0
-    )
-    separator_g_per_cell = float(
-        product.get("separator_g_cell_min") or 0
-    )
-    housing_g_per_cell = float(
-        product.get("housing_g_cell_min") or 0
-    )
-
-    material_requirements["electrolyte_kg"] = round(
-        number_of_cells * electrolyte_g_per_cell / 1000,
-        4,
-    )
-    material_requirements["separator_kg"] = round(
-        number_of_cells * separator_g_per_cell / 1000,
-        4,
-    )
-    material_requirements["housing_kg"] = round(
-        number_of_cells * housing_g_per_cell / 1000,
-        4,
-    )
-
+    # Cell-level materials currently use finished-cell demand, consistent with
+    # the previous implementation. Move to each introduction step if waste
+    # accounting for separator/electrolyte/housing is required.
+    for result_key, product_key in (
+        ("electrolyte_kg", "electrolite_g_cell_min"),
+        ("separator_kg", "separator_g_cell_min"),
+        ("housing_kg", "housing_g_cell_min"),
+    ):
+        materials[result_key] = round(
+            good_cells * _number(product, product_key, default=0) / 1000, 4
+        )
     return {
-        "technologies": simulation,
-        "material_requirements": material_requirements,
+        "technologies": branch_results + assembly_results,
+        "material_requirements": materials,
     }

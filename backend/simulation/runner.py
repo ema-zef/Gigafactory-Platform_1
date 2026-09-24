@@ -75,7 +75,9 @@ def run(request):
     # =========================================================
 
     flow = calculate_required_material_flow(
-        route=route,
+        cathode_route=request.cathode_route,
+        anode_route=request.anode_route,
+        assembly_route=request.assembly_route,
         product=product,
         required_good_cells_day=required_good_cells_day
     )
@@ -168,84 +170,6 @@ def run(request):
         tech["costs"] = costs
         tech["carbon"] = carbon
     
-        # -----------------------------------------------------
-        # Machines / batches / shifts
-        # -----------------------------------------------------
-
-        machines = calculate_machines(
-            tech["required_output"],
-            equipment,
-            production,
-        )
-
-
-        # -----------------------------------------------------
-        # Operators
-        # -----------------------------------------------------
-
-        operators = calculate_operators(
-            machines["machines"],
-            equipment,
-        )
-
-
-        # -----------------------------------------------------
-        # Energy
-        # -----------------------------------------------------
-
-        energy = calculate_energy(
-            machines,
-            equipment,
-            production,
-        )
-
-
-        # -----------------------------------------------------
-        # Operating costs
-        # -----------------------------------------------------
-
-        costs = calculate_costs(
-            machines,
-            operators,
-            energy,
-            equipment,
-            production,
-        )
-
-
-        # -----------------------------------------------------
-        # Carbon
-        # -----------------------------------------------------
-
-        carbon = calculate_carbon(
-            energy,
-            production,
-        )
-
-
-        # -----------------------------------------------------
-        # Add results to technology
-        # -----------------------------------------------------
-
-        tech["machines"] = machines
-
-        tech["batches"] = machines.get(
-            "batches"
-        )
-
-        tech["shifts"] = machines.get(
-            "shifts"
-        )
-
-        tech["operators"] = operators
-
-        tech["energy"] = energy
-
-        tech["costs"] = costs
-
-        tech["carbon"] = carbon
-
-
         # =====================================================
         # Aggregate machine/operator totals
         # =====================================================
