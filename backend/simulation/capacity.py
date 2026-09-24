@@ -70,8 +70,8 @@ def _optional_number(row, key, default=0.0):
 def _electrode_geometry(product, side):
     """Return coated area and full foil geometry, in stored metre units.
 
-    Cathode coated_length and coated_width override legacy *_mm fields when
-    provided. The legacy values are already metres, despite their names.
+    Cathode coated_length and coated_width override the older *_length_m and
+    *_width_m fields when provided. All geometry values are in metres.
     A gap is uncoated foil length per electrode repeat. Tab area is *extra*
     collector area outside the full-width rectangular strip; a tab already
     included in that strip must not be entered again.
@@ -199,6 +199,7 @@ def calculate_required_material_flow(
         assembly_route, good_cells, "cells/day", "assembly"
     )
     branch_results = []
+    geometry_results = {}
     for side, steps in (("cathode", cathode_route), ("anode", anode_route)):
         geometry = _electrode_geometry(product, side)
         assembly_input_length = assembly_input_cells * geometry["metres_per_cell"]
@@ -227,10 +228,43 @@ def calculate_required_material_flow(
             * geometry["coated_width_m"]
             * geometry["loading_kg_m2"]
         )
-        collector_area_m2 = collector_length * (
-            geometry["collector_width_m"]
-            + geometry["extra_tab_area_per_web_m2_per_m"]
+        rectangular_foil_area_m2 = collector_length * geometry["collector_width_m"]
+        extra_tab_area_m2 = collector_length * geometry["extra_tab_area_per_web_m2_per_m"]
+        collector_area_m2 = rectangular_foil_area_m2 + extra_tab_area_m2
+        coated_area_m2 = (
+            collector_length * geometry["coating_fraction_of_web_length"]
+            * geometry["coated_width_m"]
         )
+        gap_foil_area_m2 = (
+            collector_length * (1 - geometry["coating_fraction_of_web_length"])
+            * geometry["collector_width_m"]
+        )
+        geometry_results[side] = {
+            "electrodes_per_cell": _number(product, "number_of_electrodes_in_cell", positive=True),
+            "coated_length_per_electrode_m": geometry["coated_length_m"],
+            "uncoated_gap_per_electrode_m": geometry["uncoated_gap_m"],
+            "foil_length_per_cell_m": geometry["metres_per_cell"],
+            "coated_width_m": geometry["coated_width_m"],
+            "collector_width_m": geometry["collector_width_m"],
+            "coated_area_per_cell_m2": geometry["coated_area_per_cell_m2"],
+            "gap_foil_area_per_cell_m2": (
+                geometry["metres_per_cell"] -
+                geometry["coated_area_per_cell_m2"] / geometry["coated_width_m"]
+            ) * geometry["collector_width_m"],
+            "additional_tab_area_per_cell_m2": (
+                geometry["collector_area_per_cell_m2"] -
+                geometry["metres_per_cell"] * geometry["collector_width_m"]
+            ),
+            "collector_area_per_cell_m2": geometry["collector_area_per_cell_m2"],
+            "dry_coating_kg_per_cell": geometry["dry_coating_kg_per_cell"],
+            "coating_input_foil_length_m_day": collector_length,
+            "coated_area_m2_day": coated_area_m2,
+            "gap_foil_area_m2_day": gap_foil_area_m2,
+            "rectangular_foil_area_m2_day": rectangular_foil_area_m2,
+            "additional_tab_area_m2_day": extra_tab_area_m2,
+            "total_collector_area_m2_day": collector_area_m2,
+            "dry_coating_kg_day": dry_coating_kg,
+        }
         solids_key = f"{side}_solid_content_min_w%"
         solids = _number(product, solids_key, positive=True) / 100
         if not 0 < solids <= 1:
@@ -260,4 +294,5 @@ def calculate_required_material_flow(
     return {
         "technologies": branch_results + assembly_results,
         "material_requirements": materials,
+        "geometry": geometry_results,
     }
