@@ -56,50 +56,85 @@ def _reverse_route(steps, finished_output, unit, branch):
     return results, required_output
 
 
-def _electrode_geometry(product, side):
-    """Return electrode geometry using the product's stored metre values.
+def _optional_number(row, key, default=0.0):
+    """Read a nullable, nonnegative geometry field without changing legacy rows."""
+    value = row.get(key) if hasattr(row, "get") else row[key]
+    if value is None:
+        return default
+    number = float(value)
+    if number < 0:
+        raise ValueError(f"{key} must not be negative; received {value}")
+    return number
 
-    The legacy *_mm column names are retained in the database, but their
-    values are already metres. Coating loading applies to coated electrode
-    area; collector mass applies to the full collector-web area.
+
+def _electrode_geometry(product, side):
+    """Return coated area and full foil geometry, in stored metre units.
+
+    Cathode coated_length and coated_width override legacy *_mm fields when
+    provided. The legacy values are already metres, despite their names.
+    A gap is uncoated foil length per electrode repeat. Tab area is *extra*
+    collector area outside the full-width rectangular strip; a tab already
+    included in that strip must not be entered again.
     """
     if side == "cathode":
-        length_key = "cathode_length_mm"
-        coated_width_key = "cathode_width_mm"
+        legacy_length_key = "cathode_length_mm"
+        legacy_width_key = "cathode_width_mm"
         collector_width_key = "cathode_coll_width_m"
         loading_key = "mass_load_cath_kg_m2"
+        coated_length_key = "cathode_coated_length_m"
+        coated_width_key = "cathode_coated_width_m"
+        gap_key = "cathode_uncoated_gap_m"
+        tab_key = "cathode_tab_area_m2"
     elif side == "anode":
-        length_key = "anode_length_mm"
-        coated_width_key = "anode_width_mm"
+        legacy_length_key = "anode_length_mm"
+        legacy_width_key = "anode_width_mm"
         collector_width_key = "anode_coll_width_m"
         loading_key = "mass_load_anode_kg_m2"
+        coated_length_key = coated_width_key = gap_key = tab_key = None
     else:
         raise ValueError(f"Unknown electrode side: {side}")
 
-    electrodes_per_cell = _number(
-        product, "number_of_electrodes_in_cell", positive=True
+    electrodes_per_cell = _number(product, "number_of_electrodes_in_cell", positive=True)
+    # The new cathode fields can be rolled out without breaking older products.
+    coated_length_m = _number(
+        product, coated_length_key, positive=True
+    ) if coated_length_key and product.get(coated_length_key) is not None else _number(
+        product, legacy_length_key, positive=True
     )
-    length_m = _number(product, length_key, positive=True)
-    coated_width_m = _number(product, coated_width_key, positive=True)
+    coated_width_m = _number(
+        product, coated_width_key, positive=True
+    ) if coated_width_key and product.get(coated_width_key) is not None else _number(
+        product, legacy_width_key, positive=True
+    )
+    gap_m = _optional_number(product, gap_key) if gap_key else 0.0
+    extra_tab_area_m2 = _optional_number(product, tab_key) if tab_key else 0.0
     collector_width_m = _number(product, collector_width_key, positive=True)
     loading_kg_m2 = _number(product, loading_key, positive=True)
+    if coated_width_m > collector_width_m:
+        raise ValueError(f"{side} coated width cannot exceed collector width")
 
-    metres_per_cell = electrodes_per_cell * length_m
-    coated_area_per_cell_m2 = metres_per_cell * coated_width_m
-    collector_area_per_cell_m2 = metres_per_cell * collector_width_m
-    dry_coating_kg_per_cell = coated_area_per_cell_m2 * loading_kg_m2
-
+    foil_length_per_electrode_m = coated_length_m + gap_m
+    metres_per_cell = electrodes_per_cell * foil_length_per_electrode_m
+    coated_area_per_cell_m2 = electrodes_per_cell * coated_length_m * coated_width_m
+    collector_area_per_cell_m2 = electrodes_per_cell * (
+        foil_length_per_electrode_m * collector_width_m + extra_tab_area_m2
+    )
     return {
         "metres_per_cell": metres_per_cell,
+        "coated_length_m": coated_length_m,
+        "uncoated_gap_m": gap_m,
         "coated_width_m": coated_width_m,
         "collector_width_m": collector_width_m,
+        "coating_fraction_of_web_length": coated_length_m / foil_length_per_electrode_m,
+        "extra_tab_area_per_web_m2_per_m": extra_tab_area_m2 / foil_length_per_electrode_m,
         "coated_area_per_cell_m2": coated_area_per_cell_m2,
         "collector_area_per_cell_m2": collector_area_per_cell_m2,
-        "dry_coating_kg_per_cell": dry_coating_kg_per_cell,
+        "dry_coating_kg_per_cell": coated_area_per_cell_m2 * loading_kg_m2,
+        "loading_kg_m2": loading_kg_m2,
     }
 
 
-def _electrode_materials(product, side, wet_slurry_kg, collector_length_m, collector_width_m, materials):
+def _electrode_materials(product, side, wet_slurry_kg, collector_area_m2, materials):
     prefix = side
     active = _number(product, f"{prefix}_am_w%") / 100
     additive = _number(product, f"{prefix}_additive_w%") / 100
@@ -118,7 +153,7 @@ def _electrode_materials(product, side, wet_slurry_kg, collector_length_m, colle
     materials[f"{prefix}_solvent_kg"] = round(wet_slurry_kg - dry_kg, 4)
     collector_key = "cathode_coll_kg_m2" if side == "cathode" else "anode_coll_kg_m2"
     collector_kg_m2 = _number(product, collector_key, positive=True)
-    materials[f"{prefix}_collector_kg"] = round(collector_length_m * collector_width_m * collector_kg_m2, 4)
+    materials[f"{prefix}_collector_kg"] = round(collector_area_m2 * collector_kg_m2, 4)
 
 
 def calculate_required_material_flow(
@@ -184,15 +219,17 @@ def calculate_required_material_flow(
             raise ValueError(f"{side} route has no coating step")
         collector_length = coating["required_input"]
 
-        # Wet slurry must cover the coating input web, including coating yield.
+        # The machine processes the full web pitch, but slurry is deposited
+        # only on the coated fraction; gaps and tabs receive no coating.
         dry_coating_kg = (
             collector_length
+            * geometry["coating_fraction_of_web_length"]
             * geometry["coated_width_m"]
-            * _number(
-                product,
-                "mass_load_cath_kg_m2" if side == "cathode" else "mass_load_anode_kg_m2",
-                positive=True,
-            )
+            * geometry["loading_kg_m2"]
+        )
+        collector_area_m2 = collector_length * (
+            geometry["collector_width_m"]
+            + geometry["extra_tab_area_per_web_m2_per_m"]
         )
         solids_key = f"{side}_solid_content_min_w%"
         solids = _number(product, solids_key, positive=True) / 100
@@ -203,8 +240,7 @@ def calculate_required_material_flow(
             mass_steps, slurry_for_coating_kg, "kg/day", side
         )
         _electrode_materials(
-            product, side, wet_slurry_input, collector_length,
-            geometry["collector_width_m"], materials
+            product, side, wet_slurry_input, collector_area_m2, materials
         )
         # Keep the original user-defined order within each branch.
         by_id = {s["technology_id"]: s for s in mass_results + roll_results}
