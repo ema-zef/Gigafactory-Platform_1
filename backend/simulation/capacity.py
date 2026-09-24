@@ -77,8 +77,8 @@ def _electrode_geometry(product, side):
     included in that strip must not be entered again.
     """
     if side == "cathode":
-        legacy_length_key = "cathode_length_mm"
-        legacy_width_key = "cathode_width_mm"
+        legacy_length_key = "cathode_length_m"
+        legacy_width_key = "cathode_width_m"
         collector_width_key = "cathode_coll_width_m"
         loading_key = "mass_load_cath_kg_m2"
         coated_length_key = "cathode_coated_length_m"
@@ -86,8 +86,8 @@ def _electrode_geometry(product, side):
         gap_key = "cathode_uncoated_gap_m"
         tab_key = "cathode_tab_area_m2"
     elif side == "anode":
-        legacy_length_key = "anode_length_mm"
-        legacy_width_key = "anode_width_mm"
+        legacy_length_key = "anode_length_m"
+        legacy_width_key = "anode_width_m"
         collector_width_key = "anode_coll_width_m"
         loading_key = "mass_load_anode_kg_m2"
         coated_length_key = coated_width_key = gap_key = tab_key = None
