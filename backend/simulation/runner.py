@@ -135,10 +135,23 @@ def run(request):
             tech["technology_id"]
         ]
 
+        # The equipment function converts lane-metres to parent-web metres only
+        # for coating/calendaring; vacuum drying remains cycle based.
+        side = tech.get("branch")
+        machine_geometry = None
+        if side in ("cathode", "anode"):
+            side_geometry = (geometry or {}).get(side)
+            if side_geometry is not None:
+                machine_geometry = {
+                    "collector_width_m": side_geometry["collector_width_m"],
+                    "effective_parent_web_width_m": side_geometry["effective_parent_web_width_m"],
+                    "electrode_web_input_length_m_day": tech["required_input"],
+                }
         machines = calculate_machines(
             tech["required_output"],
             equipment,
             production,
+            geometry=machine_geometry,
         )
 
         operators = calculate_operators(

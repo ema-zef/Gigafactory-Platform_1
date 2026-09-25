@@ -1,4 +1,5 @@
 """Daily capacity and independent cathode/anode/assembly material flows."""
+import math
 def _number(row, key, *, positive=False, default=None):
     value = row.get(key) if hasattr(row, "get") else row[key]
     if value is None:
@@ -219,6 +220,25 @@ def calculate_required_material_flow(
         if coating is None:
             raise ValueError(f"{side} route has no coating step")
         collector_length = coating["required_input"]
+        parent_width = _number(product, "effective_parent_web_width_m", positive=True)
+        lane_width = geometry["collector_width_m"]
+        lanes = math.floor(parent_width / lane_width + 1e-9)
+        if lanes < 1:
+            raise ValueError(f"{side}: parent web {parent_width:g} m cannot fit one {lane_width:g} m collector lane")
+        usable_width = lanes * lane_width
+        trim_width = max(0.0, parent_width - usable_width)
+        parent_length = collector_length / lanes
+        parent_foil_area_m2 = parent_length * parent_width
+        trim_area_m2 = parent_length * trim_width
+        # Only explicitly extra tab foil is outside the parent web. Tabs already
+        # included in the rectangular parent strip must not be added again.
+        extra_tab_area_m2 = collector_length * geometry["extra_tab_area_per_web_m2_per_m"]
+        gross_collector_area_m2 = parent_foil_area_m2 + extra_tab_area_m2
+        collector_density_key = "cathode_coll_kg_m2" if side == "cathode" else "anode_coll_kg_m2"
+        foil_kg_m2 = _number(product, collector_density_key, positive=True)
+        materials[f"{side}_collector_trim_kg"] = round(trim_area_m2 * foil_kg_m2, 4)
+        materials[f"{side}_collector_usable_kg"] = round((collector_length * lane_width + extra_tab_area_m2) * foil_kg_m2, 4)
+
 
         # The machine processes the full web pitch, but slurry is deposited
         # only on the coated fraction; gaps and tabs receive no coating.
@@ -229,8 +249,7 @@ def calculate_required_material_flow(
             * geometry["loading_kg_m2"]
         )
         rectangular_foil_area_m2 = collector_length * geometry["collector_width_m"]
-        extra_tab_area_m2 = collector_length * geometry["extra_tab_area_per_web_m2_per_m"]
-        collector_area_m2 = rectangular_foil_area_m2 + extra_tab_area_m2
+        collector_area_m2 = gross_collector_area_m2
         coated_area_m2 = (
             collector_length * geometry["coating_fraction_of_web_length"]
             * geometry["coated_width_m"]
@@ -263,6 +282,16 @@ def calculate_required_material_flow(
             "rectangular_foil_area_m2_day": rectangular_foil_area_m2,
             "additional_tab_area_m2_day": extra_tab_area_m2,
             "total_collector_area_m2_day": collector_area_m2,
+            "effective_parent_web_width_m": parent_width,
+            "lanes_per_web": lanes,
+            "usable_lane_width_m": usable_width,
+            "uncoated_trim_width_m": trim_width,
+            "parent_web_length_m_day": parent_length,
+            "gross_parent_foil_area_m2_day": parent_foil_area_m2,
+            "uncoated_trim_area_m2_day": trim_area_m2,
+            "gross_purchased_collector_area_m2_day": gross_collector_area_m2,
+            "gross_purchased_collector_kg_day": gross_collector_area_m2 * foil_kg_m2,
+            "uncoated_trim_kg_day": trim_area_m2 * foil_kg_m2,
             "dry_coating_kg_day": dry_coating_kg,
         }
         solids_key = f"{side}_solid_content_min_w%"

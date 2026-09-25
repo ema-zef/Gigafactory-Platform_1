@@ -25,6 +25,12 @@ def calculate_material_costs(material_requirements, product):
     electrolyte_kg = get_float(material_requirements, "electrolyte_kg")
     number_of_cells = get_float(material_requirements, "number_of_cells")
 
+    # Collector quantities above are GROSS purchased foil (usable + trim).
+    cathode_trim_kg = get_float(material_requirements, "cathode_collector_trim_kg")
+    anode_trim_kg = get_float(material_requirements, "anode_collector_trim_kg")
+    if cathode_trim_kg > cathode_collector_kg or anode_trim_kg > anode_collector_kg:
+        raise ValueError("Collector trim cannot exceed gross purchased collector mass")
+
     # Prices
     cathode_price = get_float(product, "cath_prec_material_price_€")
     cathode_solvent_price = get_float(product, "solvent_price_c")
@@ -121,6 +127,9 @@ def calculate_material_costs(material_requirements, product):
             "additive": round(cathode_additive_cost, 2),
             "binder": round(cathode_binder_cost, 2),
             "collector": round(cathode_collector_cost, 2),
+            "collector_gross_purchased_kg": round(cathode_collector_kg, 4),
+            "collector_trim_kg": round(cathode_trim_kg, 4),
+            "collector_trim_purchase_cost_included": round(cathode_trim_kg * cathode_collector_price, 2),
             "total": round(cathode_total, 2),
         },
         "anode": {
@@ -129,6 +138,9 @@ def calculate_material_costs(material_requirements, product):
             "additive": round(anode_additive_cost, 2),
             "binder": round(anode_binder_cost, 2),
             "collector": round(anode_collector_cost, 2),
+            "collector_gross_purchased_kg": round(anode_collector_kg, 4),
+            "collector_trim_kg": round(anode_trim_kg, 4),
+            "collector_trim_purchase_cost_included": round(anode_trim_kg * anode_collector_price, 2),
             "total": round(anode_total, 2),
         },
         "assembly": {
