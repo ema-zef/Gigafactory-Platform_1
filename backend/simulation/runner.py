@@ -148,25 +148,31 @@ def run(request):
                     "electrode_web_input_length_m_day": tech["required_input"],
                 }
                 
-              print(
-                   "MACHINE WIDTH DEBUG:",
-                   {
-                       "technology": tech["technology_name"],
-                       "branch": tech.get("branch"),
-                       "process": tech.get("process"),
-                       "equipment_web_width": equipment.get("web_width"),
-                       "product_parent_web_width":
-                           product.get("effective_parent_web_width_m"),
-                       "machine_geometry": machine_geometry,
-                   },
-               )  
-               
+    for tech in technologies:
+        equipment = equipment_lookup[tech["technology_id"]]
+
+        # Keep your existing machine_geometry calculation here.
+
+        print(
+            "MACHINE WIDTH DEBUG:",
+            {
+                "technology": tech["technology_name"],
+                "branch": tech.get("branch"),
+                "process": tech.get("process"),
+                "equipment_web_width": equipment.get("web_width"),
+                "product_parent_web_width":
+                    product.get("effective_parent_web_width_m"),
+                "machine_geometry": machine_geometry,
+            },
+        )
+
         machines = calculate_machines(
             tech["required_output"],
             equipment,
             production,
             geometry=machine_geometry,
         )
+        
 
         operators = calculate_operators(
             machines["machines"],
