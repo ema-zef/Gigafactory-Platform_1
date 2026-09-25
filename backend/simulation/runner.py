@@ -147,6 +147,20 @@ def run(request):
                     "effective_parent_web_width_m": side_geometry["effective_parent_web_width_m"],
                     "electrode_web_input_length_m_day": tech["required_input"],
                 }
+                
+              print(
+                   "MACHINE WIDTH DEBUG:",
+                   {
+                       "technology": tech["technology_name"],
+                       "branch": tech.get("branch"),
+                       "process": tech.get("process"),
+                       "equipment_web_width": equipment.get("web_width"),
+                       "product_parent_web_width":
+                           product.get("effective_parent_web_width_m"),
+                       "machine_geometry": machine_geometry,
+                   },
+               )  
+               
         machines = calculate_machines(
             tech["required_output"],
             equipment,
