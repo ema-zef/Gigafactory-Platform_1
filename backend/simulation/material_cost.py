@@ -1,4 +1,4 @@
-def calculate_material_costs(material_requirements, product):
+def calculate_material_costs(material_requirements, product, product_material):
     """Calculate daily material costs from process-derived material quantities."""
 
     def get_float(data, key, default=0.0):
@@ -31,23 +31,28 @@ def calculate_material_costs(material_requirements, product):
     if cathode_trim_kg > cathode_collector_kg or anode_trim_kg > anode_collector_kg:
         raise ValueError("Collector trim cannot exceed gross purchased collector mass")
 
+    # Prices: three explicitly sourced from product_material.
+    for key in ("cathode_ccoll_mat_price", "anode_ccoll_mat_price", "electr_mat_price"):
+        if product_material.get(key) is None or product_material.get(key) == "":
+            raise ValueError(f"Missing product_material price: {key}")
+
     # Prices
     cathode_price = get_float(product, "cath_prec_material_price_€")
     cathode_solvent_price = get_float(product, "solvent_price_c")
     cathode_additive_price = get_float(product, "additive_price")
     cathode_binder_price = get_float(product, "binder_price")
-    cathode_collector_price = get_float(product, "cathode_collector_price_e_kg")
+    cathode_collector_price = get_float(product_material, "cathode_ccoll_mat_price")
 
     anode_price = get_float(product, "ano_raw_material_price_€")
     anode_solvent_price = get_float(product, "solvent_price_a")
     anode_additive_price = get_float(product, "additive_price")
     anode_binder_price = get_float(product, "binder_price")
-    anode_collector_price = get_float(product, "anode_collector_price_e_kg")
+    anode_collector_price = get_float(product_material, "anode_ccoll_mat_price")
 
     # Keep DB spelling "separater" if that is the actual column name.
     separator_price = get_float(product, "separater_price_e_kg")
     housing_price = get_float(product, "housing_price")
-    electrolyte_price = get_float(product, "electrolyte_material_price_€")
+    electrolyte_price = get_float(product_material, "electr_mat_price")
     sealing_price = get_float(product, "sealing_price")
 
     # Composition validation. Product fields are stored as percentages.

@@ -901,3 +901,14 @@ def load_equipment(ids):
         row["id"]: row
         for row in rows
     }
+
+# Load the product-specific material-price record for simulation.
+def load_product_material(product_code):
+    with engine.connect() as conn:
+        return conn.execute(
+            text("""
+                SELECT * FROM product_material
+                WHERE productcode = :product
+            """),
+            {"product": product_code},
+        ).mappings().one_or_none()

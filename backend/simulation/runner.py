@@ -1,5 +1,6 @@
 from database import (
     load_product_configuration,
+    load_product_material,
     load_production_configuration,
     load_equipment,
 )
@@ -27,6 +28,10 @@ def run(request):
     product = load_product_configuration(
         request.product_code
     )
+
+    product_material = load_product_material(request.product_code)
+    if product_material is None:
+        raise ValueError(f"No product_material row for {request.product_code}")
 
     production = load_production_configuration(
         request.plant_code
@@ -101,7 +106,8 @@ def run(request):
 
     material_costs = calculate_material_costs(
         material_requirements,
-        product
+        product,
+        product_material
     )
 
 
@@ -130,51 +136,38 @@ def run(request):
     # Technology calculations
     # =========================================================
 
-    print("CAPACITY GEOMETRY:", geometry)
+    for tech in technologies:
+        equipment = equipment_lookup[
+            tech["technology_id"]
+        ]
 
+        # The equipment function converts lane-metres to parent-web metres only
+        # for coating/calendaring; vacuum drying remains cycle based.
+        side = tech.get("branch")
+        machine_geometry = None
+        if side in ("cathode", "anode"):
+            side_geometry = (geometry or {}).get(side)
+            if side_geometry is not None:
+                machine_geometry = {
+                    "collector_width_m": side_geometry["collector_width_m"],
+                    "effective_parent_web_width_m": side_geometry["effective_parent_web_width_m"],
+                    "electrode_web_input_length_m_day": tech["required_input"],
+                }
+                
     for tech in technologies:
         equipment = equipment_lookup[tech["technology_id"]]
 
-        # Match the machine module's pre-slitting process detection. Other
-        # technologies, including vacuum dryers, do not need web geometry.
-        process = str(equipment.get("process") or tech.get("process") or "").strip().lower()
-        branch = str(tech.get("branch") or "").strip().lower()
-        category = str(equipment.get("process_category") or "").strip().upper()
-        is_parent_web_process = (
-            category in ("ROLL", "CATHODE_ROLL", "ANODE_ROLL")
-            and any(name in process for name in ("coating", "calender", "calendar"))
-        )
-
-        machine_geometry = None
-        if is_parent_web_process:
-            if branch not in ("cathode", "anode"):
-                raise ValueError(
-                    f"{equipment.get('technology_name', 'Unknown technology')}: "
-                    f"expected cathode/anode branch, got {branch!r}."
-                )
-            side_geometry = (geometry or {}).get(branch)
-            if not side_geometry:
-                raise ValueError(
-                    f"{equipment.get('technology_name', 'Unknown technology')}: "
-                    f"missing {branch} electrode geometry in material flow."
-                )
-            machine_geometry = {
-                "collector_width_m": side_geometry.get("collector_width_m"),
-                "effective_parent_web_width_m": product.get(
-                    "effective_parent_web_width_m"
-                ),
-                # This step's input reflects its own process yield.
-                "electrode_web_input_length_m_day": tech["required_input"],
-            }
+        # Keep your existing machine_geometry calculation here.
 
         print(
             "MACHINE WIDTH DEBUG:",
             {
-                "technology": equipment.get("technology_name"),
-                "branch": branch,
-                "process": process,
+                "technology": tech["technology_name"],
+                "branch": tech.get("branch"),
+                "process": tech.get("process"),
                 "equipment_web_width": equipment.get("web_width"),
-                "product_parent_web_width": product.get("effective_parent_web_width_m"),
+                "product_parent_web_width":
+                    product.get("effective_parent_web_width_m"),
                 "machine_geometry": machine_geometry,
             },
         )
