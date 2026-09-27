@@ -153,11 +153,6 @@ def run(request):
                     "effective_parent_web_width_m": side_geometry["effective_parent_web_width_m"],
                     "electrode_web_input_length_m_day": tech["required_input"],
                 }
-                
-    for tech in technologies:
-        equipment = equipment_lookup[tech["technology_id"]]
-
-        # Keep your existing machine_geometry calculation here.
 
         print(
             "MACHINE WIDTH DEBUG:",
