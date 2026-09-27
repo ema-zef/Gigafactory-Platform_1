@@ -23,7 +23,9 @@ def calculate_material_costs(material_requirements, product, product_material):
     separator_kg = get_float(material_requirements, "separator_kg")
     housing_kg = get_float(material_requirements, "housing_kg")
     electrolyte_kg = get_float(material_requirements, "electrolyte_kg")
-    number_of_cells = get_float(material_requirements, "number_of_cells")
+    sealing_kg = get_float(material_requirements, "sealing_kg")
+    if sealing_kg < 0:
+        raise ValueError("sealing_kg must not be negative")
 
     # Collector quantities above are GROSS purchased foil (usable + trim).
     cathode_trim_kg = get_float(material_requirements, "cathode_collector_trim_kg")
@@ -53,7 +55,11 @@ def calculate_material_costs(material_requirements, product, product_material):
     separator_price = get_float(product, "separater_price_e_kg")
     housing_price = get_float(product, "housing_price")
     electrolyte_price = get_float(product_material, "electr_mat_price")
-    sealing_price = get_float(product, "sealing_price")
+    if product.get("sealing_price_kg") is None or product.get("sealing_price_kg") == "":
+        raise ValueError("Missing product_configuration price: sealing_price_kg")
+    sealing_price_kg = get_float(product, "sealing_price_kg")
+    if sealing_price_kg < 0:
+        raise ValueError("sealing_price_kg must not be negative")
 
     # Composition validation. Product fields are stored as percentages.
     cathode_composition = (
@@ -113,8 +119,8 @@ def calculate_material_costs(material_requirements, product, product_material):
     housing_cost = housing_kg * housing_price
     electrolyte_cost = electrolyte_kg * electrolyte_price
 
-    # Assumes sealing_price is EUR/cell.
-    sealing_cost = number_of_cells * sealing_price
+    # sealing_kg includes the required kg/cell for finished-cell demand.
+    sealing_cost = sealing_kg * sealing_price_kg
 
     assembly_total = (
         separator_cost
@@ -153,6 +159,7 @@ def calculate_material_costs(material_requirements, product, product_material):
             "housing": round(housing_cost, 2),
             "electrolyte": round(electrolyte_cost, 2),
             "sealing": round(sealing_cost, 2),
+            "sealing_kg": round(sealing_kg, 4),
             "total": round(assembly_total, 2),
         },
         "total": round(total, 2),

@@ -193,7 +193,7 @@ def calculate_required_material_flow(
         "anode_solvent_kg": 0, "anode_additive_kg": 0,
         "anode_binder_kg": 0, "anode_collector_kg": 0,
         "separator_kg": 0, "electrolyte_kg": 0, "housing_kg": 0,
-        "housing_units": good_cells, "sealing_units": good_cells,
+        "housing_units": good_cells, "sealing_units": good_cells, "sealing_kg": 0,
     }
 
     assembly_results, assembly_input_cells = _reverse_route(
@@ -320,6 +320,12 @@ def calculate_required_material_flow(
         materials[result_key] = round(
             good_cells * _number(product, product_key, default=0) / 1000, 4
         )
+    # sealing_kg_cell is stored in kg/cell (unlike the gram/cell fields above).
+    # Require the new field rather than silently using the old per-cell price.
+    sealing_kg_cell = _number(product, "sealing_kg_cell")
+    if sealing_kg_cell < 0:
+        raise ValueError("sealing_kg_cell must not be negative")
+    materials["sealing_kg"] = round(good_cells * sealing_kg_cell, 4)
     return {
         "technologies": branch_results + assembly_results,
         "material_requirements": materials,
