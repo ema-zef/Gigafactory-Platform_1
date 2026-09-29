@@ -1,13 +1,14 @@
 from fastapi import APIRouter
 
 from database import (
-    create_production_configuration,
-    update_production_configuration,
+    create_production_configuration as insert_production_configuration,
+    update_production_configuration as update_production_configuration_db,
     read_production_configuration,
     delete_production_configuration_db,
     get_production_configuration_schema,
     check_production_configuration_db,
     read_production_configuration_options,
+    debug_production_columns as debug_production_columns_db,
 )
 
 router = APIRouter()
@@ -29,7 +30,7 @@ def debug_production_columns():
 @router.post("/production_configuration")
 def create_production_configuration(record: dict):
 
-    return create_production_configuration(record)
+    return insert_production_configuration({key: value for key, value in record.items() if key not in {"id", "row_id", "seq"}})
     
 # ----------------------------------
 # Production Configuration UPDATE

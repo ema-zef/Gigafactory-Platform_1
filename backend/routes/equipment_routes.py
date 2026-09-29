@@ -2,6 +2,7 @@ from fastapi import APIRouter
 
 from database import (
     read_equipment,
+    insert_equipment,
     update_equipment_table,
     
     delete_equipment_db,
@@ -23,6 +24,10 @@ def equipment_check():
 
     return check_equipment_table()
     
+@router.post("/equipment")
+def create_equipment(record: dict):
+    return insert_equipment(record)
+
 # ----------------------------------
 # Equipment READ
 # ----------------------------------

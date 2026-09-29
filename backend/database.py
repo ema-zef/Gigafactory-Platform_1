@@ -55,6 +55,26 @@ def check_equipment_table():
 
         )
         
+
+# Equipment CREATE: database identity/serial supplies the new id.
+def insert_equipment(record: dict):
+    with engine.begin() as conn:
+        column_rows = conn.execute(text("""
+            SELECT column_name FROM information_schema.columns
+            WHERE table_schema = current_schema() AND table_name = 'equipment'
+        """)).scalars().all()
+        allowed = set(column_rows) - {"id"}
+        values = {key: value for key, value in record.items() if key in allowed}
+        if not values:
+            raise HTTPException(status_code=400, detail="No equipment fields provided")
+        columns = ", ".join(f'"{key}"' for key in values)
+        placeholders = ", ".join(f":{key}" for key in values)
+        new_id = conn.execute(
+            text(f"INSERT INTO equipment ({columns}) VALUES ({placeholders}) RETURNING id"),
+            values,
+        ).scalar_one()
+    return {"status": "created", "id": new_id}
+
 # ----------------------------------
 # Equipment READ
 # ----------------------------------

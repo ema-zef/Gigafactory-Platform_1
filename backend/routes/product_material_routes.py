@@ -19,7 +19,7 @@ router = APIRouter()
 @router.post("/product_material")
 def create_product_material(record: dict):
 
-    return insert_product_material(record)
+    return insert_product_material({key: value for key, value in record.items() if key not in {"id", "row_id", "seq"}})
     
 # ----------------------------------
 # Product Material READ

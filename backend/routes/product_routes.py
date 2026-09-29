@@ -5,7 +5,7 @@ from database import (
     update_product_configuration,
     read_product_configuration,
     delete_product_configuration,
-    product_configuration_schema,
+    product_configuration_schema as get_product_configuration_schema,
     check_product_configuration,
     get_product_configuration_options,
 )
@@ -19,7 +19,7 @@ router = APIRouter()
 @router.post("/product_configuration")
 def create_product(record: dict):
 
-    return insert_product_configuration(record)
+    return insert_product_configuration({key: value for key, value in record.items() if key not in {"id", "row_id", "seq"}})
     
 # ----------------------------------
 # Product Configuration UPDATE
