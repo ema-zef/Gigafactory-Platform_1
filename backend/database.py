@@ -842,93 +842,113 @@ def read_production_configuration_options():
 # Product Configuration QUERY
 # ----------------------------------
 
-def load_product_configuration(product_code):
-
+def load_product_configuration(product_code, owner_id):
     with engine.connect() as conn:
-
-        return conn.execute(
-
+        rows = conn.execute(
             text("""
                 SELECT *
-                FROM product_configuration
+                FROM public.product_configuration
                 WHERE productcode = :product
+                  AND owner_id = :owner_id
             """),
+            {"product": product_code, "owner_id": owner_id},
+        ).mappings().all()
 
-            {"product": product_code}
+    if len(rows) != 1:
+        raise HTTPException(
+            status_code=404,
+            detail="Product configuration not found or not accessible",
+        )
 
-        ).mappings().first()
+    return rows[0]
     
 # ----------------------------------
 # Production Configuration QUERY
 # ----------------------------------
 
-def load_production_configuration(plant_code):
-    
+def load_production_configuration(plant_code, owner_id):
     with engine.connect() as conn:
-    
-        return conn.execute(
+        rows = conn.execute(
             text("""
                 SELECT
-                annual_output_kwh,
-                hours_per_shift,
-                no_of_shifts_per_day,
-                available_time_min,
-                electricity_cost_rate_min_eur_per_kwh,
-                electricity_cost_rate_max_eur_per_kwh,
-                gas_cost_rate_min_eur_per_kwh,
-                gas_cost_rate_max_eur_per_kwh,
-                floor_space_cost_rate_eur_per_m2,
-                elec_ghge_rate,
-                gas_ghge_rate,
-                operator_rate
-                FROM production_configuration
+                    annual_output_kwh,
+                    hours_per_shift,
+                    no_of_shifts_per_day,
+                    available_time_min,
+                    electricity_cost_rate_min_eur_per_kwh,
+                    electricity_cost_rate_max_eur_per_kwh,
+                    gas_cost_rate_min_eur_per_kwh,
+                    gas_cost_rate_max_eur_per_kwh,
+                    floor_space_cost_rate_eur_per_m2,
+                    elec_ghge_rate,
+                    gas_ghge_rate,
+                    operator_rate
+                FROM public.production_configuration
                 WHERE code = :plant
+                  AND owner_id = :owner_id
             """),
-            {
-             "plant": plant_code
-            }
-        ).mappings().first()
+            {"plant": plant_code, "owner_id": owner_id},
+        ).mappings().all()
+
+    if len(rows) != 1:
+        raise HTTPException(
+            status_code=404,
+            detail="Production configuration not found or not accessible",
+        )
+
+    return rows[0]
 
 # ----------------------------------
 # Equipment QUERY
 # ----------------------------------
 
-def load_equipment(ids):
-
+def load_equipment(ids, owner_id):
     if not ids:
         return {}
 
-    with engine.connect() as conn:
+    requested_ids = set(ids)
 
-        stmt = (
-            text("""
-                SELECT *
-                FROM equipment
-                WHERE id IN :ids
-            """)
-            .bindparams(bindparam("ids", expanding=True))
-        )
+    with engine.connect() as conn:
+        stmt = text("""
+            SELECT *
+            FROM public.equipment
+            WHERE id IN :ids
+              AND owner_id = :owner_id
+        """).bindparams(bindparam("ids", expanding=True))
 
         rows = conn.execute(
             stmt,
-            {"ids": ids}
+            {"ids": list(requested_ids), "owner_id": owner_id},
         ).mappings().all()
-        
-    print(rows[0].keys())
-    print(rows[0])
 
-    return {
-        row["id"]: row
-        for row in rows
-    }
+    equipment_by_id = {row["id"]: row for row in rows}
+
+    if set(equipment_by_id) != requested_ids:
+        raise HTTPException(
+            status_code=404,
+            detail="One or more equipment records were not found or are not accessible",
+        )
+
+    return equipment_by_id
 
 # Load the product-specific material-price record for simulation.
-def load_product_material(product_code):
+def load_product_material(product_code, owner_id):
     with engine.connect() as conn:
-        return conn.execute(
+        rows = conn.execute(
             text("""
-                SELECT * FROM product_material
+                SELECT *
+                FROM public.product_material
                 WHERE productcode = :product
+                  AND owner_id = :owner_id
             """),
-            {"product": product_code},
-        ).mappings().one_or_none()
+            {"product": product_code, "owner_id": owner_id},
+        ).mappings().all()
+
+    if len(rows) != 1:
+        raise HTTPException(
+            status_code=404,
+            detail="Product material not found or not accessible",
+        )
+
+    return rows[0]
+

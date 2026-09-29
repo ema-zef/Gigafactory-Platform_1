@@ -1,3 +1,5 @@
+from auth import User
+
 from database import (
     load_product_configuration,
     load_product_material,
@@ -19,22 +21,25 @@ from simulation.material_cost import calculate_material_costs
 from simulation.bottleneck import identify_bottleneck
 
 
-def run(request):
+def run(request, user: User):
 
     # =========================================================
     # Load master data
     # =========================================================
 
     product = load_product_configuration(
-        request.product_code
+        request.product_code,
+        user.id,
     )
 
-    product_material = load_product_material(request.product_code)
-    if product_material is None:
-        raise ValueError(f"No product_material row for {request.product_code}")
+    product_material = load_product_material(
+        request.product_code,
+        user.id,
+    )
 
     production = load_production_configuration(
-        request.plant_code
+        request.plant_code,
+        user.id,
     )
     
     print(
@@ -54,10 +59,8 @@ def run(request):
     )
 
     equipment_lookup = load_equipment(
-        [
-            step.technology_id
-            for step in route
-        ]
+        [step.technology_id for step in route],
+        user.id,
     )
 
 
