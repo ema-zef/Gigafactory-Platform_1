@@ -130,4 +130,35 @@ def options(table, user):
 
 def selectable_options(table, user):
     pk, code = TABLES[table]
-    return [{'id': r[pk], 'code': r[code], 'is_sota': r['is_sota'], 'sota_line_type': r.get('sota_line_type')} for r in visible_rows(table,user) if r.get(code)]
+    if not code:
+        raise HTTPException(404, 'No selectable options')
+
+    rows = visible_rows(table, user)
+
+    # A private product is simulation-ready only when the same owner has the
+    # corresponding product_material row. Published SOTA snapshots are already
+    # self-contained immutable scenario inputs, so keep those selectable.
+    if table == 'product_configuration':
+        with engine.connect() as conn:
+            material_codes = set(conn.execute(text("""
+                SELECT productcode
+                FROM public.product_material
+                WHERE owner_id = :owner
+                  AND productcode IS NOT NULL
+            """), {'owner': user.id}).scalars().all())
+
+        rows = [
+            r for r in rows
+            if r.get('is_sota') or r.get(code) in material_codes
+        ]
+
+    return [
+        {
+            'id': r[pk],
+            'code': r[code],
+            'is_sota': r['is_sota'],
+            'sota_line_type': r.get('sota_line_type'),
+        }
+        for r in rows
+        if r.get(code)
+    ]
