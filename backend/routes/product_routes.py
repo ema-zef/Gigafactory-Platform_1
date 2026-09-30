@@ -6,6 +6,7 @@ intentionally not implemented here; it requires a separate explicit policy.
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import text
+from sqlalchemy.exc import IntegrityError
 
 from auth import User, current_user
 from database import (
@@ -57,25 +58,44 @@ def _validated_product_fields(conn, record: dict, *, creating: bool) -> dict:
         )
     if not record:
         raise HTTPException(status_code=400, detail="No product fields provided")
+
+    if "productcode" in record:
+        if record["productcode"] is None or not str(record["productcode"]).strip():
+            raise HTTPException(status_code=422, detail="Product code is required")
+        record["productcode"] = str(record["productcode"]).strip()
+    elif creating:
+        raise HTTPException(status_code=422, detail="Product code is required")
+
     return record
 
 
 @router.post("/product_configuration")
 def create_product(record: dict, user: User = Depends(current_user)):
-    with engine.begin() as conn:
-        values = _validated_product_fields(conn, record, creating=True)
-        values = {**values, "owner_id": user.id}
-        columns = ", ".join(f'"{column}"' for column in values)
-        placeholders = ", ".join(f":{column}" for column in values)
-        row_id = conn.execute(
-            text(f"""
-                INSERT INTO public.product_configuration ({columns})
-                VALUES ({placeholders})
-                RETURNING row_id
-            """),
-            values,
-        ).scalar_one()
-    return {"status": "created", "id": row_id}
+    try:
+        with engine.begin() as conn:
+            values = _validated_product_fields(conn, record, creating=True)
+            values = {**values, "owner_id": user.id}
+            columns = ", ".join(f'"{column}"' for column in values)
+            placeholders = ", ".join(f":{column}" for column in values)
+            row_id = conn.execute(
+                text(f"""
+                    INSERT INTO public.product_configuration ({columns})
+                    VALUES ({placeholders})
+                    RETURNING row_id
+                """),
+                values,
+            ).scalar_one()
+    except IntegrityError as exc:
+        if getattr(exc.orig, "diag", None) and exc.orig.diag.constraint_name == "uq_product_configuration_owner_productcode":
+            raise HTTPException(status_code=409, detail="You already have a product with this product code") from exc
+        raise
+
+    return {
+        "status": "created",
+        "id": row_id,
+        "productcode": values["productcode"],
+        "material_required": True,
+    }
 
 
 @router.get("/product_configuration")
@@ -93,11 +113,17 @@ def get_products(user: User = Depends(current_user)):
 def product_options(user: User = Depends(current_user)):
     with engine.connect() as conn:
         return conn.execute(text("""
-            SELECT DISTINCT productcode
-            FROM public.product_configuration
-            WHERE owner_id = :owner_id
-              AND productcode IS NOT NULL
-            ORDER BY productcode
+            SELECT pc.productcode
+            FROM public.product_configuration pc
+            WHERE pc.owner_id = :owner_id
+              AND pc.productcode IS NOT NULL
+              AND EXISTS (
+                  SELECT 1
+                  FROM public.product_material pm
+                  WHERE pm.owner_id = pc.owner_id
+                    AND pm.productcode = pc.productcode
+              )
+            ORDER BY pc.productcode
         """), {"owner_id": user.id}).scalars().all()
 
 
@@ -129,16 +155,21 @@ def update_product(
     record: dict,
     user: User = Depends(current_user),
 ):
-    with engine.begin() as conn:
-        values = _validated_product_fields(conn, record, creating=False)
-        set_clause = ", ".join(f'"{column}" = :value_{column}' for column in values)
-        params = {f"value_{column}": value for column, value in values.items()}
-        updated_id = conn.execute(text(f"""
-            UPDATE public.product_configuration
-            SET {set_clause}
-            WHERE row_id = :record_id AND owner_id = :owner_id
-            RETURNING row_id
-        """), {**params, "record_id": record_id, "owner_id": user.id}).scalar_one_or_none()
+    try:
+        with engine.begin() as conn:
+            values = _validated_product_fields(conn, record, creating=False)
+            set_clause = ", ".join(f'"{column}" = :value_{column}' for column in values)
+            params = {f"value_{column}": value for column, value in values.items()}
+            updated_id = conn.execute(text(f"""
+                UPDATE public.product_configuration
+                SET {set_clause}
+                WHERE row_id = :record_id AND owner_id = :owner_id
+                RETURNING row_id
+            """), {**params, "record_id": record_id, "owner_id": user.id}).scalar_one_or_none()
+    except IntegrityError as exc:
+        if getattr(exc.orig, "diag", None) and exc.orig.diag.constraint_name == "uq_product_configuration_owner_productcode":
+            raise HTTPException(status_code=409, detail="You already have a product with this product code") from exc
+        raise
     if updated_id is None:
         raise HTTPException(status_code=404, detail="Product not found")
     return {"status": "updated"}
