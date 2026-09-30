@@ -127,6 +127,25 @@ def product_options(user: User = Depends(current_user)):
         """), {"owner_id": user.id}).scalars().all()
 
 
+@router.get("/product_configuration/selectable")
+def selectable_products(user: User = Depends(current_user)):
+    """Return only owner products that have their required material record."""
+    with engine.connect() as conn:
+        rows = conn.execute(text("""
+            SELECT pc.row_id AS id, pc.productcode AS code
+            FROM public.product_configuration pc
+            WHERE pc.owner_id = :owner_id
+              AND pc.productcode IS NOT NULL
+              AND EXISTS (
+                  SELECT 1 FROM public.product_material pm
+                  WHERE pm.owner_id = pc.owner_id
+                    AND pm.productcode = pc.productcode
+              )
+            ORDER BY pc.productcode
+        """), {"owner_id": user.id}).mappings().all()
+    return [dict(row) for row in rows]
+
+
 @router.get("/product_configuration/schema")
 def product_schema():
     return get_product_configuration_schema()
