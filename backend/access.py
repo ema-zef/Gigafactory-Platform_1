@@ -80,13 +80,76 @@ def clean_payload(conn, table, payload):
 
 def create(table, payload, user):
     pk, _ = TABLES[table]
+
     with engine.begin() as conn:
         values = clean_payload(conn, table, payload)
-        values['owner_id'] = user.id
+        values["owner_id"] = user.id
+
         keys = list(values)
-        sql = f'INSERT INTO public.{table} (' + ', '.join(f'"{k}"' for k in keys) + ') VALUES (' + ', '.join(f':{k}' for k in keys) + f') RETURNING "{pk}"'
-        record_id = conn.execute(text(sql), values).scalar_one()
-    return {'status': 'created', pk: record_id}
+
+        # Do not use database column names as SQLAlchemy bind names.
+        # Some columns contain characters such as %, (, and ).
+        bind_values = {
+            f"v{i}": values[key]
+            for i, key in enumerate(keys)
+        }
+
+        sql = (
+            f"INSERT INTO public.{table} ("
+            + ", ".join(f'"{key}"' for key in keys)
+            + ") VALUES ("
+            + ", ".join(f":v{i}" for i in range(len(keys)))
+            + f') RETURNING "{pk}"'
+        )
+
+        record_id = conn.execute(
+            text(sql),
+            bind_values,
+        ).scalar_one()
+
+    return {
+        "status": "created",
+        pk: record_id,
+    }
+
+
+def update(table, record_id, payload, user):
+    pk, _ = TABLES[table]
+
+    with engine.begin() as conn:
+        # Preserves your existing owner/admin access control.
+        own_record(conn, table, record_id, user)
+
+        values = clean_payload(conn, table, payload)
+
+        if not values:
+            raise HTTPException(422, "No editable fields")
+
+        # Database column names remain quoted identifiers, while the
+        # SQLAlchemy bind parameters use safe generated names.
+        items = list(values.items())
+
+        bind_values = {
+            f"v{i}": value
+            for i, (_, value) in enumerate(items)
+        }
+        bind_values["record_id"] = record_id
+
+        assignments = ", ".join(
+            f'"{column}"=:v{i}'
+            for i, (column, _) in enumerate(items)
+        )
+
+        conn.execute(
+            text(
+                f"UPDATE public.{table} "
+                f'SET {assignments} '
+                f'WHERE "{pk}"=:record_id'
+            ),
+            bind_values,
+        )
+
+    return {"status": "updated"}
 
 
 def update(table, record_id, payload, user):
