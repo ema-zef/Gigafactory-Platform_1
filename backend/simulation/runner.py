@@ -128,6 +128,8 @@ def run(request, user: User):
     total_electricity_cost = 0
     total_gas_cost = 0
     total_overhead_cost = 0
+    total_floor_space_cost = 0
+    total_floor_space_m2 = 0
     total_operating_cost = 0
 
     total_electricity_carbon = 0
@@ -254,6 +256,14 @@ def run(request, user: User):
 
         total_overhead_cost += (
             costs["overhead"]
+        )
+
+        total_floor_space_cost += (
+            costs.get("floor_space", 0)
+        )
+
+        total_floor_space_m2 += (
+            costs.get("floor_space_m2", 0)
         )
 
         total_operating_cost += (
@@ -431,6 +441,16 @@ def run(request, user: User):
                     "overhead": round(
                         total_overhead_cost,
                         2
+                    ),
+
+                    "floor_space": round(
+                        total_floor_space_cost,
+                        2
+                    ),
+
+                    "floor_space_m2": round(
+                        total_floor_space_m2,
+                        4
                     ),
 
                     "total": round(
