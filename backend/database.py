@@ -880,6 +880,7 @@ def load_production_configuration(plant_code, owner_id):
                     gas_cost_rate_min_eur_per_kwh,
                     gas_cost_rate_max_eur_per_kwh,
                     floor_space_cost_rate_eur_per_m2,
+                    "Cost_Overhead_Factor_(%)",
                     elec_ghge_rate,
                     gas_ghge_rate,
                     operator_rate
@@ -887,7 +888,10 @@ def load_production_configuration(plant_code, owner_id):
                 WHERE code = :plant
                   AND owner_id = :owner_id
             """),
-            {"plant": plant_code, "owner_id": owner_id},
+            {
+                "plant": plant_code,
+                "owner_id": owner_id,
+            },
         ).mappings().all()
 
     if len(rows) != 1:
