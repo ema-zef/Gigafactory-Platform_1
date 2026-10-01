@@ -149,19 +149,6 @@ def update(table, record_id, payload, user):
     return {"status": "updated"}
 
 
-def update(table, record_id, payload, user):
-    pk, _ = TABLES[table]
-    with engine.begin() as conn:
-        own_record(conn, table, record_id, user)
-        values = clean_payload(conn, table, payload)
-        if not values:
-            raise HTTPException(422, 'No editable fields')
-        values['record_id'] = record_id
-        assignments = ', '.join(f'"{k}"=:{k}' for k in values if k != 'record_id')
-        conn.execute(text(f'UPDATE public.{table} SET {assignments} WHERE "{pk}"=:record_id'), values)
-    return {'status': 'updated'}
-
-
 def delete(table, record_id, user):
     pk, _ = TABLES[table]
     with engine.begin() as conn:
