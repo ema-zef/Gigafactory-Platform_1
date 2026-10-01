@@ -117,7 +117,6 @@ def update(table, record_id, payload, user):
     pk, _ = TABLES[table]
 
     with engine.begin() as conn:
-        # Preserves your existing owner/admin access control.
         own_record(conn, table, record_id, user)
 
         values = clean_payload(conn, table, payload)
@@ -125,8 +124,6 @@ def update(table, record_id, payload, user):
         if not values:
             raise HTTPException(422, "No editable fields")
 
-        # Database column names remain quoted identifiers, while the
-        # SQLAlchemy bind parameters use safe generated names.
         items = list(values.items())
 
         bind_values = {
@@ -142,7 +139,7 @@ def update(table, record_id, payload, user):
 
         conn.execute(
             text(
-                f"UPDATE public.{table} "
+                f'UPDATE public.{table} '
                 f'SET {assignments} '
                 f'WHERE "{pk}"=:record_id'
             ),
