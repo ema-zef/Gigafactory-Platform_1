@@ -75,7 +75,14 @@ def clean_payload(conn, table, payload):
         raise HTTPException(422, f'Unknown fields: {sorted(unknown)}')
     if 'owner_id' in payload or pk in payload:
         raise HTTPException(422, 'Owner and generated ID cannot be submitted')
-    return {k: v for k, v in payload.items() if k in allowed and k not in forbidden}
+    # Normalize blank form values to SQL NULL. This prevents PostgreSQL
+    # numeric/date columns from receiving invalid empty strings.
+    # Non-empty values such as "0", "0.5", and normal text are preserved.
+    return {
+        k: (None if isinstance(v, str) and v.strip() == "" else v)
+        for k, v in payload.items()
+        if k in allowed and k not in forbidden
+    }
 
 
 def create(table, payload, user):
