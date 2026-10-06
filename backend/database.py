@@ -956,3 +956,39 @@ def load_product_material(product_code, owner_id):
 
     return rows[0]
 
+# ----------------------------------
+# Environment Configuration QUERY
+# ----------------------------------
+
+def load_environment_configurations(environment_types, owner_id):
+    """Load one private environment configuration per requested type."""
+    requested = {value for value in environment_types if value and value != "none"}
+    if not requested:
+        return {}
+
+    with engine.connect() as conn:
+        stmt = text("""
+            SELECT *
+            FROM public.environment_configuration
+            WHERE environment_type IN :types
+              AND owner_id = :owner_id
+        """).bindparams(bindparam("types", expanding=True))
+
+        rows = conn.execute(
+            stmt,
+            {"types": sorted(requested), "owner_id": owner_id},
+        ).mappings().all()
+
+    by_type = {row["environment_type"]: row for row in rows}
+    missing = requested - set(by_type)
+    if missing:
+        raise HTTPException(
+            status_code=422,
+            detail=(
+                "Missing environment configuration for: "
+                + ", ".join(sorted(missing))
+            ),
+        )
+
+    return by_type
+

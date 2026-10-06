@@ -5,6 +5,7 @@ from database import (
     load_product_material,
     load_production_configuration,
     load_equipment,
+    load_environment_configurations,
 )
 
 from simulation.capacity import (
@@ -19,6 +20,7 @@ from simulation.costs import calculate_costs
 from simulation.carbon import calculate_carbon
 from simulation.material_cost import calculate_material_costs
 from simulation.bottleneck import identify_bottleneck
+from simulation.environment import calculate_environment
 
 
 def run(request, user: User):
@@ -56,6 +58,22 @@ def run(request, user: User):
         request.cathode_route
         + request.anode_route
         + request.assembly_route
+    )
+
+    # Environment is a route-step property. Keep it separate from equipment
+    # master data because the same equipment can be deployed differently.
+    step_environment = {
+        (step.technology_id, index): step.environment
+        for index, step in enumerate(route)
+    }
+    requested_environment_types = {
+        step.environment
+        for step in route
+        if step.environment != "none"
+    }
+    environment_configs = load_environment_configurations(
+        requested_environment_types,
+        user.id,
     )
 
     equipment_lookup = load_equipment(
@@ -141,10 +159,18 @@ def run(request, user: User):
     # Technology calculations
     # =========================================================
 
-    for tech in technologies:
+    environment_assignments = {key: [] for key in requested_environment_types}
+
+    for tech_index, tech in enumerate(technologies):
         equipment = equipment_lookup[
             tech["technology_id"]
         ]
+
+        environment_type = step_environment.get(
+            (tech["technology_id"], tech_index),
+            "none",
+        )
+        tech["environment"] = environment_type
 
         # The equipment function converts lane-metres to parent-web metres only
         # for coating/calendaring; vacuum drying remains cycle based.
@@ -211,6 +237,19 @@ def run(request, user: User):
         tech["energy"] = energy
         tech["costs"] = costs
         tech["carbon"] = carbon
+
+        if environment_type != "none":
+            equipment_footprint_m2 = (
+                float(machines["machines"] or 0)
+                * float(equipment.get("equipment_floor_space_m_2") or 0)
+            )
+            environment_assignments[environment_type].append({
+                "technology_id": tech["technology_id"],
+                "technology_name": tech["technology_name"],
+                "branch": tech.get("branch"),
+                "equipment_footprint_m2": equipment_footprint_m2,
+                "tech": tech,
+            })
     
         # =====================================================
         # Aggregate machine/operator totals
@@ -287,6 +326,57 @@ def run(request, user: User):
             carbon["total"]
         )
 
+
+    # =========================================================
+    # Shared controlled-environment infrastructure
+    # =========================================================
+
+    environments = []
+    for environment_type, assignments in environment_assignments.items():
+        if not assignments:
+            continue
+
+        environment_result = calculate_environment(
+            environment_type,
+            environment_configs[environment_type],
+            assignments,
+            production,
+        )
+        environments.append(environment_result)
+
+        env_energy = environment_result["energy"]
+        env_costs = environment_result["costs"]
+        env_carbon = environment_result["carbon"]
+
+        # Count the shared infrastructure ONCE in factory totals.
+        total_electricity += env_energy["electricity"]
+        total_gas += env_energy["gas"]
+
+        total_labour_cost += env_costs["labour"]
+        total_electricity_cost += env_costs["electricity"]
+        total_gas_cost += env_costs["gas"]
+        total_overhead_cost += env_costs["overhead"]
+        total_floor_space_cost += env_costs["floor_space"]
+        total_floor_space_m2 += environment_result["controlled_area_m2"]
+        total_operating_cost += env_costs["total"]
+
+        total_electricity_carbon += env_carbon["electricity"]
+        total_gas_carbon += env_carbon["gas"]
+        total_carbon += env_carbon["total"]
+
+        # Allocation is analytical attribution only. Do NOT add these values
+        # to factory totals again.
+        allocation_by_id = {
+            (item["technology_id"], item["technology_name"]): item
+            for item in environment_result["allocations"]
+        }
+        for assignment in assignments:
+            tech = assignment["tech"]
+            allocation = allocation_by_id.get(
+                (tech["technology_id"], tech["technology_name"])
+            )
+            if allocation:
+                tech["environment_allocation"] = allocation
 
     # =========================================================
     # Final totals
@@ -378,6 +468,9 @@ def run(request, user: User):
         "technologies":
             technologies,
 
+        # Shared controlled-environment infrastructure.
+        "environments": environments,
+
 
         # -----------------------------------------------------
         # Overall results
@@ -451,6 +544,11 @@ def run(request, user: User):
                     "floor_space_m2": round(
                         total_floor_space_m2,
                         4
+                    ),
+
+                    "environment": round(
+                        sum(env["costs"]["total"] for env in environments),
+                        2
                     ),
 
                     "total": round(
