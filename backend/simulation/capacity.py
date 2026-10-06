@@ -48,6 +48,7 @@ def _reverse_route(steps, finished_output, unit, branch):
             "category": _step_value(step, "process_category"),
             "branch": branch,
             "quality_rate": quality_percent,
+            "environment": _step_value(step, "environment", "none"),
             "unit": unit,
             "required_output": round(required_output, 6),
             "required_input": round(required_input, 6),

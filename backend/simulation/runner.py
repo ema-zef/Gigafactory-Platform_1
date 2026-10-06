@@ -60,12 +60,8 @@ def run(request, user: User):
         + request.assembly_route
     )
 
-    # Environment is a route-step property. Keep it separate from equipment
-    # master data because the same equipment can be deployed differently.
-    step_environment = {
-        (step.technology_id, index): step.environment
-        for index, step in enumerate(route)
-    }
+    # Environment is a route-step property. capacity.py carries it through
+    # the reverse-flow calculation with the corresponding technology.
     requested_environment_types = {
         step.environment
         for step in route
@@ -166,11 +162,7 @@ def run(request, user: User):
             tech["technology_id"]
         ]
 
-        environment_type = step_environment.get(
-            (tech["technology_id"], tech_index),
-            "none",
-        )
-        tech["environment"] = environment_type
+        environment_type = tech.get("environment", "none")
 
         # The equipment function converts lane-metres to parent-web metres only
         # for coating/calendaring; vacuum drying remains cycle based.
@@ -244,6 +236,7 @@ def run(request, user: User):
                 * float(equipment.get("equipment_floor_space_m_2") or 0)
             )
             environment_assignments[environment_type].append({
+                "assignment_key": tech_index,
                 "technology_id": tech["technology_id"],
                 "technology_name": tech["technology_name"],
                 "branch": tech.get("branch"),
@@ -366,17 +359,15 @@ def run(request, user: User):
 
         # Allocation is analytical attribution only. Do NOT add these values
         # to factory totals again.
-        allocation_by_id = {
-            (item["technology_id"], item["technology_name"]): item
-            for item in environment_result["allocations"]
-        }
-        for assignment in assignments:
-            tech = assignment["tech"]
-            allocation = allocation_by_id.get(
-                (tech["technology_id"], tech["technology_name"])
+        allocations = environment_result["allocations"]
+        if len(allocations) != len(assignments):
+            raise ValueError(
+                f"Environment allocation mismatch for {environment_type}: "
+                f"{len(assignments)} assignments, {len(allocations)} allocations"
             )
-            if allocation:
-                tech["environment_allocation"] = allocation
+
+        for assignment, allocation in zip(assignments, allocations):
+            assignment["tech"]["environment_allocation"] = allocation
 
     # =========================================================
     # Final totals
