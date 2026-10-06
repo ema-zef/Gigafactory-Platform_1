@@ -990,5 +990,20 @@ def load_environment_configurations(environment_types, owner_id):
             ),
         )
 
+    unconfigured = sorted(
+        environment_type
+        for environment_type in requested
+        if not bool(by_type[environment_type].get("is_configured"))
+    )
+    if unconfigured:
+        raise HTTPException(
+            status_code=422,
+            detail=(
+                "Environment configuration exists but is not configured for: "
+                + ", ".join(unconfigured)
+                + ". Enter validated parameters and set is_configured=true."
+            ),
+        )
+
     return by_type
 

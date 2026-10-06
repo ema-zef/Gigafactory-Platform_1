@@ -8,6 +8,7 @@ TABLES = {
     'product_configuration': ('row_id', 'productcode'),
     'product_material': ('seq', 'productcode'),
     'production_configuration': ('id', 'code'),
+    'environment_configuration': ('id', 'code'),
 }
 
 
@@ -69,7 +70,15 @@ def own_record(conn, table, record_id, user):
 def clean_payload(conn, table, payload):
     pk, _ = TABLES[table]
     allowed = columns(conn, table)
-    forbidden = {pk, 'owner_id', 'is_sota', 'read_only', 'sota_line_type'}
+    forbidden = {
+        pk,
+        'owner_id',
+        'created_at',
+        'updated_at',
+        'is_sota',
+        'read_only',
+        'sota_line_type',
+    }
     unknown = set(payload) - set(allowed) - {'is_sota', 'read_only', 'sota_line_type'}
     if unknown:
         raise HTTPException(422, f'Unknown fields: {sorted(unknown)}')
@@ -143,6 +152,9 @@ def update(table, record_id, payload, user):
             f'"{column}"=:v{i}'
             for i, (column, _) in enumerate(items)
         )
+
+        if table == 'environment_configuration':
+            assignments += ', "updated_at"=now()'
 
         conn.execute(
             text(
