@@ -1,3 +1,4 @@
+from typing import Literal
 from pydantic import BaseModel, Field
 
 class RouteStep(BaseModel):
@@ -6,6 +7,12 @@ class RouteStep(BaseModel):
     process: str
     process_category: str
     quality_rate: float
+    environment: Literal[
+        "none",
+        "dry_room",
+        "glove_box",
+        "mini_environment",
+    ] = "none"
 
 class SimulationRequest(BaseModel):
     plant_code: str
