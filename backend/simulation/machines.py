@@ -140,7 +140,12 @@ def calculate_machines(output_required, equipment, production, geometry=None):
             daily_capacity = capacity
             capacity_method = 'stored_capacity'
         else:
-            raise ValueError(f'{technology_name} has insufficient capacity data.')
+            raise ValueError(
+                f'{technology_name} ({category or 'unknown category'}): missing usable capacity data. '
+                'For CELL equipment, configure a positive capacity (cells per cycle) and '
+                'processingtime_min (minutes per cycle), or a positive daily capacity (cells/day). '
+                f'Current values: capacity={capacity}, processingtime_min={processing_time}.'
+            )
         if category in ('MASS', 'CATHODE_MASS', 'ANODE_MASS') and processing_time is not None and processing_time > 0:
             batches = math.ceil(available_minutes_day / processing_time)
 
