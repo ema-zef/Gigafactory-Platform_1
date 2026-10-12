@@ -394,7 +394,19 @@ def calculate_required_material_flow(route=None, product=None, required_good_cel
         return upstream, results
 
     def _external_entry(step, result, kind):
-        q = float(result["required_input"] if kind == "outsourced" else result["required_output"])
+        q_lane = float(result["required_input"] if kind == "outsourced" else result["required_output"])
+        q = q_lane
+        billing_unit = result["unit"]
+        # Reverse-flow ROLL quantities are combined electrode-strip metres.
+        # External ROLL rates are billed per metre of full-width parent web.
+        if result["branch"] in ("cathode", "anode") and result["unit"] == "m/day":
+            parent_width = _number(product, "effective_parent_web_width_m", positive=True)
+            lane_width = _electrode_geometry(product, result["branch"])["collector_width_m"]
+            lanes = math.floor(parent_width / lane_width + 1e-9)
+            if lanes < 1:
+                raise ValueError(f"{result['branch']}: parent web narrower than electrode lane")
+            q = q_lane / lanes
+            billing_unit = "parent_web_m/day"
         fee = float(_step_value(step, "fee_eur_per_unit", 0) or 0)
         transport = float(_step_value(step, "transport_eur_per_unit", 0) or 0)
         carbon = float(_step_value(step, "emissions_kgco2e_per_unit", 0) or 0)
@@ -405,7 +417,7 @@ def calculate_required_material_flow(route=None, product=None, required_good_cel
             raise ValueError("Purchased intermediate requires an explicit price")
         return {"mode": kind, "branch": result["branch"], "process": result.get("process"),
                 "name": result.get("technology_name"), "quantity": round(q, 6),
-                "unit": result["unit"], "processing_or_purchase_cost": round(q * fee, 2),
+                "unit": billing_unit, "processing_or_purchase_cost": round(q * fee, 2),
                 "transport_cost": round(q * transport, 2),
                 "total_cost": round(q * (fee + transport), 2),
                 "carbon_kgco2e": round(q * carbon, 2)}
@@ -463,6 +475,7 @@ def calculate_required_material_flow(route=None, product=None, required_good_cel
             materials[f"{side}_collector_kg"] = collector_area * collector_density
             materials[f"{side}_collector_trim_kg"] = trim_area * collector_density
             geometry_results[side].update(lanes_per_web=lanes,
+                parent_web_length_m_day=parent_length,
                 coating_input_foil_length_m_day=collector_length,
                 gross_purchased_collector_area_m2_day=collector_area)
             dry_kg = collector_length * geom["coating_fraction_of_web_length"] * geom["coated_width_m"] * geom["loading_kg_m2"]
