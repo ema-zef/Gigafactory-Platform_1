@@ -158,7 +158,7 @@ def _electrode_materials(product, side, wet_slurry_kg, collector_area_m2, materi
     materials[f"{prefix}_collector_kg"] = round(collector_area_m2 * collector_kg_m2, 4)
 
 
-def calculate_required_material_flow(
+def _calculate_legacy_material_flow(
     route=None,
     product=None,
     required_good_cells_day=None,
@@ -332,3 +332,159 @@ def calculate_required_material_flow(
         "material_requirements": materials,
         "geometry": geometry_results,
     }
+
+
+# Hybrid routes retain the proven integrated calculation for legacy scenarios.
+def calculate_required_material_flow(route=None, product=None, required_good_cells_day=None, *,
+                                     cathode_route=None, anode_route=None, assembly_route=None):
+    branches = {"cathode": cathode_route or [], "anode": anode_route or [],
+                "assembly": assembly_route or []}
+    if route is not None:
+        raise ValueError("Provide independent cathode/anode/assembly routes")
+    if product is None or required_good_cells_day is None:
+        raise ValueError("Product and required_good_cells_day are required")
+    if not any(branches.values()):
+        raise ValueError("Select at least one manufacturing process")
+    def mode(s):
+        return _step_value(s, "execution_mode", "in_house") or "in_house"
+    if (all(branches.values()) and all(mode(s) == "in_house" for b in branches.values() for s in b)
+        and all(any("MASS" in str(_step_value(t, "process_category", "")).strip().upper() for t in branches[b])
+                and any("ROLL" in str(_step_value(t, "process_category", "")).strip().upper() for t in branches[b])
+                and any("COAT" in str(_step_value(t, "process", "")).upper() for t in branches[b])
+                for b in ("cathode", "anode"))):
+        return _calculate_legacy_material_flow(product=product,
+            required_good_cells_day=required_good_cells_day, **{k + "_route": v for k, v in branches.items()})
+
+    good = float(required_good_cells_day)
+    if good <= 0 or not math.isfinite(good):
+        raise ValueError("required_good_cells_day must be positive and finite")
+    materials = {k: 0.0 for k in (
+        "cathode_active_material_kg cathode_solvent_kg cathode_additive_kg cathode_binder_kg cathode_collector_kg "
+        "anode_active_material_kg anode_solvent_kg anode_additive_kg anode_binder_kg anode_collector_kg "
+        "separator_kg electrolyte_kg housing_kg sealing_kg cathode_collector_trim_kg anode_collector_trim_kg").split()}
+    materials.update(number_of_cells=good, housing_units=0, sealing_units=0)
+    technologies, external, geometry_results = [], [], {}
+
+    def process_branch(branch, steps, target, unit):
+        if not steps:
+            return target, []
+        # A purchased intermediate is a source boundary, not an extra manufacturing operation.
+        purchases = [i for i, s in enumerate(steps) if mode(s) == "purchased_intermediate"]
+        if len(purchases) > 1 or (purchases and purchases[0] != 0):
+            raise ValueError(f"{branch}: purchased intermediate must be the first step")
+        results, upstream = _reverse_route(steps[1:] if purchases else steps, target, unit, branch)
+        for step, result in zip(steps[1:] if purchases else steps, results):
+            result["execution_mode"] = mode(step)
+            if mode(step) == "in_house" and result["technology_id"] is None:
+                raise ValueError(f"{branch}: in-house step requires equipment")
+            if mode(step) not in ("in_house", "outsourced"):
+                raise ValueError(f"{branch}: invalid execution mode")
+            if mode(step) == "outsourced":
+                result["technology_id"] = None
+                result["environment"] = "none"
+                external.append(_external_entry(step, result, "outsourced"))
+        if purchases:
+            step = steps[0]
+            declared = (_step_value(step, "input_material") or "").strip()
+            if not declared:
+                raise ValueError(f"{branch}: purchased intermediate requires input_material")
+            external.append(_external_entry(step, {"branch": branch, "unit": unit,
+                "required_output": upstream, "required_input": upstream,
+                "technology_name": declared, "process": declared}, "purchased_intermediate"))
+        return upstream, results
+
+    def _external_entry(step, result, kind):
+        q = float(result["required_input"] if kind == "outsourced" else result["required_output"])
+        fee = float(_step_value(step, "fee_eur_per_unit", 0) or 0)
+        transport = float(_step_value(step, "transport_eur_per_unit", 0) or 0)
+        carbon = float(_step_value(step, "emissions_kgco2e_per_unit", 0) or 0)
+        if any(not math.isfinite(v) or v < 0 for v in (fee, transport, carbon)):
+            raise ValueError("External prices and emissions must be finite and nonnegative")
+        # Zero is an explicitly entered assumption, never an implicit free purchase.
+        if kind == "purchased_intermediate" and _step_value(step, "fee_eur_per_unit", None) is None:
+            raise ValueError("Purchased intermediate requires an explicit price")
+        return {"mode": kind, "branch": result["branch"], "process": result.get("process"),
+                "name": result.get("technology_name"), "quantity": round(q, 6),
+                "unit": result["unit"], "processing_or_purchase_cost": round(q * fee, 2),
+                "transport_cost": round(q * transport, 2),
+                "total_cost": round(q * (fee + transport), 2),
+                "carbon_kgco2e": round(q * carbon, 2)}
+
+    assembly = branches["assembly"]
+    assembly_input, assembly_results = process_branch("assembly", assembly, good, "cells/day")
+    technologies.extend(assembly_results)
+    # Only materials introduced by simulated operations are purchased as raw materials.
+    assembly_processes = " ".join(str(_step_value(s, "process", "")).lower() for s in assembly
+                                  if mode(s) in ("in_house", "outsourced"))
+    if "stack" in assembly_processes or "wind" in assembly_processes:
+        materials["separator_kg"] = assembly_input * _number(product, "separator_g_cell_min", default=0) / 1000
+    if "fill" in assembly_processes:
+        materials["electrolyte_kg"] = assembly_input * _number(product, "electrolite_g_cell_min", default=0) / 1000
+    if "hous" in assembly_processes or "insert" in assembly_processes:
+        materials["housing_kg"] = assembly_input * _number(product, "housing_g_cell_min", default=0) / 1000
+        materials["housing_units"] = assembly_input
+    if "seal" in assembly_processes:
+        materials["sealing_kg"] = assembly_input * _number(product, "sealing_kg_cell", default=0)
+        materials["sealing_units"] = assembly_input
+
+    for side in ("cathode", "anode"):
+        steps = branches[side]
+        if not steps:
+            continue
+        geom = _electrode_geometry(product, side)
+        geometry_results[side] = {"collector_width_m": geom["collector_width_m"],
+            "effective_parent_web_width_m": _number(product, "effective_parent_web_width_m", positive=True),
+            "coated_area_per_cell_m2": geom["coated_area_per_cell_m2"],
+            "foil_length_per_cell_m": geom["metres_per_cell"]}
+        target_m = assembly_input * geom["metres_per_cell"] if assembly else good * geom["metres_per_cell"]
+        def category(s):
+            c = str(_step_value(s, "process_category", "") or "").strip().upper()
+            return "MASS" if "MASS" in c else "ROLL" if "ROLL" in c else c
+        mass = [s for s in steps if category(s) == "MASS"]
+        roll = [s for s in steps if category(s) == "ROLL"]
+        if len(mass) + len(roll) != len(steps):
+            raise ValueError(f"{side}: every step must have MASS or ROLL category")
+        if mass and roll and max(steps.index(s) for s in mass) > min(steps.index(s) for s in roll):
+            raise ValueError(f"{side}: MASS steps must precede ROLL steps")
+        roll_upstream, roll_results = process_branch(side, roll, target_m, "m/day")
+        technologies.extend(roll_results)
+        coating_steps = [r for r in roll_results if "coat" in str(r["process"]).lower()]
+        if coating_steps:
+            collector_length = coating_steps[0]["required_input"]
+            parent_width = _number(product, "effective_parent_web_width_m", positive=True)
+            lane_width = geom["collector_width_m"]
+            lanes = math.floor(parent_width / lane_width + 1e-9)
+            if lanes < 1:
+                raise ValueError(f"{side}: parent web narrower than electrode lane")
+            parent_length = collector_length / lanes
+            collector_area = parent_length * parent_width + collector_length * geom["extra_tab_area_per_web_m2_per_m"]
+            trim_area = parent_length * (parent_width - lanes * lane_width)
+            collector_density = _number(product, f"{side}_coll_kg_m2", positive=True)
+            materials[f"{side}_collector_kg"] = collector_area * collector_density
+            materials[f"{side}_collector_trim_kg"] = trim_area * collector_density
+            geometry_results[side].update(lanes_per_web=lanes,
+                coating_input_foil_length_m_day=collector_length,
+                gross_purchased_collector_area_m2_day=collector_area)
+            dry_kg = collector_length * geom["coating_fraction_of_web_length"] * geom["coated_width_m"] * geom["loading_kg_m2"]
+        else:
+            dry_kg = target_m * geom["coating_fraction_of_web_length"] * geom["coated_width_m"] * geom["loading_kg_m2"]
+        if mass:
+            if roll and not coating_steps:
+                raise ValueError(f"{side}: MASS-to-ROLL transition requires a coating step")
+            solids = _number(product, f"{side}_solid_content_min_w%", positive=True) / 100
+            if not 0 < solids <= 1:
+                raise ValueError(f"{side}: invalid solids content")
+            mass_upstream, mass_results = process_branch(side, mass, dry_kg / solids, "kg/day")
+            technologies.extend(mass_results)
+            if not any(mode(s) == "purchased_intermediate" for s in mass):
+                # Toll processing retains ownership of raw materials.
+                _electrode_materials(product, side, mass_upstream, materials[f"{side}_collector_kg"] / _number(product, f"{side}_coll_kg_m2", positive=True), materials)
+        elif coating_steps and not any(mode(s) == "purchased_intermediate" for s in roll):
+            # Missing mixing is a purchased slurry boundary; explicit price required.
+            raise ValueError(f"{side}: coating without mixing requires a purchased slurry boundary with price")
+        if mass and not roll:
+            # MASS-only produces slurry equivalent to the requested electrode output.
+            pass
+    return {"technologies": technologies, "material_requirements": materials,
+            "geometry": geometry_results, "external_processing": external,
+            "production_mode": "finished_cells" if assembly else "cell_equivalent_electrodes"}

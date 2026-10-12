@@ -65,7 +65,7 @@ def run(request, user: User):
     requested_environment_types = {
         step.environment
         for step in route
-        if step.environment != "none"
+        if step.execution_mode == "in_house" and step.environment != "none"
     }
     environment_configs = load_environment_configurations(
         requested_environment_types,
@@ -73,7 +73,7 @@ def run(request, user: User):
     )
 
     equipment_lookup = load_equipment(
-        [step.technology_id for step in route],
+        [step.technology_id for step in route if step.execution_mode == "in_house" and step.technology_id is not None],
         user.id,
     )
 
@@ -158,6 +158,8 @@ def run(request, user: User):
     environment_assignments = {key: [] for key in requested_environment_types}
 
     for tech_index, tech in enumerate(technologies):
+        if tech.get("execution_mode", "in_house") != "in_house":
+            continue
         equipment = equipment_lookup[
             tech["technology_id"]
         ]
@@ -382,10 +384,10 @@ def run(request, user: User):
         material_costs["total"]
     )
 
-    total_cost = (
-        total_operating_cost
-        + total_material_cost
-    )
+    external_processing = flow.get("external_processing", [])
+    external_cost = sum(item["total_cost"] for item in external_processing)
+    external_carbon = sum(item["carbon_kgco2e"] for item in external_processing)
+    total_cost = total_operating_cost + total_material_cost + external_cost
 
 
     # =========================================================
@@ -393,8 +395,8 @@ def run(request, user: User):
     # =========================================================
 
     bottleneck = identify_bottleneck(
-        technologies
-    )
+        [t for t in technologies if t.get("execution_mode", "in_house") == "in_house"]
+    ) if any(t.get("execution_mode", "in_house") == "in_house" for t in technologies) else None
 
 
     # =========================================================
@@ -458,6 +460,8 @@ def run(request, user: User):
 
         "technologies":
             technologies,
+        "external_processing": external_processing,
+        "production_mode": flow.get("production_mode", "finished_cells"),
 
         # Shared controlled-environment infrastructure.
         "environments": environments,
@@ -550,6 +554,7 @@ def run(request, user: User):
 
                 "materials":
                     material_costs,
+                "external_processing": round(external_cost, 2),
 
                 "total": round(
                     total_cost,
@@ -574,8 +579,9 @@ def run(request, user: User):
                     2
                 ),
 
+                "external_processing": round(external_carbon, 2),
                 "total": round(
-                    total_carbon,
+                    total_carbon + external_carbon,
                     2
                 ),
             },
