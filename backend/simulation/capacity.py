@@ -425,19 +425,44 @@ def calculate_required_material_flow(route=None, product=None, required_good_cel
     assembly = branches["assembly"]
     assembly_input, assembly_results = process_branch("assembly", assembly, good, "cells/day")
     technologies.extend(assembly_results)
-    # Only materials introduced by simulated operations are purchased as raw materials.
-    assembly_processes = " ".join(str(_step_value(s, "process", "")).lower() for s in assembly
-                                  if mode(s) in ("in_house", "outsourced"))
-    if "stack" in assembly_processes or "wind" in assembly_processes:
-        materials["separator_kg"] = assembly_input * _number(product, "separator_g_cell_min", default=0) / 1000
-    if "fill" in assembly_processes:
-        materials["electrolyte_kg"] = assembly_input * _number(product, "electrolite_g_cell_min", default=0) / 1000
-    if "hous" in assembly_processes or "insert" in assembly_processes:
-        materials["housing_kg"] = assembly_input * _number(product, "housing_g_cell_min", default=0) / 1000
-        materials["housing_units"] = assembly_input
-    if "seal" in assembly_processes:
-        materials["sealing_kg"] = assembly_input * _number(product, "sealing_kg_cell", default=0)
-        materials["sealing_units"] = assembly_input
+    # Attribute cell-level materials to their actual introduction step. Explicit
+    # operations override the bundled Assembly fallback, preventing double count.
+    # Purchased intermediates are source boundaries, not introduction operations.
+    operations = [r for r in assembly_results
+                  if r.get("execution_mode") in ("in_house", "outsourced")]
+
+    def introduction_step(*keywords, assembly_fallback=False):
+        for result in operations:
+            process = str(result.get("process") or "").casefold()
+            if any(keyword in process for keyword in keywords):
+                return result
+        if assembly_fallback:
+            return next((r for r in operations
+                         if str(r.get("process") or "").strip().casefold().startswith("assembly")), None)
+        return None
+
+    # The quantity entering the introduction step includes that step's own scrap.
+    separator_step = introduction_step("stack", "wind", assembly_fallback=True)
+    if separator_step is not None:
+        materials["separator_kg"] = (separator_step["required_input"]
+                                     * _number(product, "separator_g_cell_min", default=0) / 1000)
+
+    electrolyte_step = introduction_step("fill")
+    if electrolyte_step is not None:
+        materials["electrolyte_kg"] = (electrolyte_step["required_input"]
+                                      * _number(product, "electrolite_g_cell_min", default=0) / 1000)
+
+    housing_step = introduction_step("hous", "insert")
+    if housing_step is not None:
+        materials["housing_units"] = housing_step["required_input"]
+        materials["housing_kg"] = (housing_step["required_input"]
+                                  * _number(product, "housing_g_cell_min", default=0) / 1000)
+
+    sealing_step = introduction_step("seal", assembly_fallback=True)
+    if sealing_step is not None:
+        materials["sealing_units"] = sealing_step["required_input"]
+        materials["sealing_kg"] = (sealing_step["required_input"]
+                                  * _number(product, "sealing_kg_cell", default=0))
 
     for side in ("cathode", "anode"):
         steps = branches[side]
