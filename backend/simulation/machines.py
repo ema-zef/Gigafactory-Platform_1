@@ -25,14 +25,20 @@ def _optional_number(mapping, key):
 def calculate_machines(output_required, equipment, production, geometry=None):
     hours_per_shift = float(production['hours_per_shift'])
     shifts = int(production['no_of_shifts_per_day'])
-    available_hours_year = float(production['available_time_min'])  # legacy: hours/year
-    if hours_per_shift <= 0 or shifts <= 0 or available_hours_year <= 0:
-        raise ValueError('Shift hours, shifts/day, and available annual hours must be positive.')
+    # available_time_min is the TOTAL available production minutes per day.
+    available_minutes_day = float(production['available_time_min'])
+    scheduled_minutes_day = hours_per_shift * shifts * 60
+    if hours_per_shift <= 0 or shifts <= 0 or not math.isfinite(available_minutes_day) or available_minutes_day <= 0:
+        raise ValueError('Shift hours, shifts/day, and available daily minutes must be positive.')
+    if available_minutes_day > scheduled_minutes_day:
+        raise ValueError(
+            f'Available daily minutes ({available_minutes_day:g}) exceed scheduled '
+            f'minutes ({scheduled_minutes_day:g}); check available_time_min units.'
+        )
 
-    scheduled_hours_year = hours_per_shift * shifts * 365
-    uptime = available_hours_year / scheduled_hours_year
-    available_hours_day = available_hours_year / 365
-    available_minutes_day = available_hours_day * 60
+    uptime = available_minutes_day / scheduled_minutes_day
+    available_hours_day = available_minutes_day / 60
+    available_hours_year = available_hours_day * 365
 
     technology_name = equipment.get('technology_name') or 'Unknown technology'
     category = (equipment.get('process_category') or '').strip().upper()
