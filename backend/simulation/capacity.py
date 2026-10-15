@@ -16,10 +16,13 @@ def calculate_capacity(product, production):
     cell_capacity = _number(product, "cell_capacity_kwh", positive=True)
     annual_energy_kwh = _number(production, "annual_output_kwh", positive=True) * 1_000_000
     good_cells_year = annual_energy_kwh / cell_capacity
+    days = _number(production, "number_of_days_per_year", positive=True)
+    if not math.isfinite(days) or not days.is_integer() or days > 366:
+        raise ValueError("number_of_days_per_year must be a whole number from 1 to 366")
     return {
         "annual_energy_kwh": annual_energy_kwh,
         "required_good_cells_year": good_cells_year,
-        "required_good_cells_day": good_cells_year / 365,
+        "required_good_cells_day": good_cells_year / days,
     }
 
 

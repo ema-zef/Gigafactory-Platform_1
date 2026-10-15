@@ -38,7 +38,10 @@ def calculate_machines(output_required, equipment, production, geometry=None):
 
     uptime = available_minutes_day / scheduled_minutes_day
     available_hours_day = available_minutes_day / 60
-    available_hours_year = available_hours_day * 365
+    days = float(production['number_of_days_per_year'])
+    if not math.isfinite(days) or not days.is_integer() or not 1 <= days <= 366:
+        raise ValueError('number_of_days_per_year must be a whole number from 1 to 366')
+    available_hours_year = available_hours_day * int(days)
 
     technology_name = equipment.get('technology_name') or 'Unknown technology'
     category = (equipment.get('process_category') or '').strip().upper()

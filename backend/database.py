@@ -875,6 +875,7 @@ def load_production_configuration(plant_code, owner_id):
                     hours_per_shift,
                     no_of_shifts_per_day,
                     available_time_min,
+                    number_of_days_per_year,
                     electricity_cost_rate_min_eur_per_kwh,
                     electricity_cost_rate_max_eur_per_kwh,
                     gas_cost_rate_min_eur_per_kwh,

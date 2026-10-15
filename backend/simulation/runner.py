@@ -54,6 +54,23 @@ def run(request, user: User):
          dict(production)
     )
 
+    # Validate the operating calendar loaded from Production_Configuration.
+    from math import isfinite
+    from fastapi import HTTPException
+    try:
+        raw_days = production["number_of_days_per_year"]
+        days_float = float(raw_days)
+        if not isfinite(days_float) or not days_float.is_integer():
+            raise ValueError("must be a whole number")
+        number_of_days_per_year = int(days_float)
+        if not 1 <= number_of_days_per_year <= 366:
+            raise ValueError("must be between 1 and 366")
+    except (KeyError, TypeError, ValueError) as exc:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Invalid production_configuration.number_of_days_per_year: {exc}",
+        ) from exc
+
     route = (
         request.cathode_route
         + request.anode_route
@@ -420,6 +437,8 @@ def run(request, user: User):
 
             "available_time_min":
                 production["available_time_min"],
+
+            "number_of_days_per_year": number_of_days_per_year,
         },
 
 
