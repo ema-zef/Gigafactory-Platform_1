@@ -1,4 +1,5 @@
 from auth import User
+from math import ceil
 
 from database import (
     load_product_configuration,
@@ -404,6 +405,38 @@ def run(request, user: User):
     external_processing = flow.get("external_processing", [])
     external_cost = sum(item["total_cost"] for item in external_processing)
     external_carbon = sum(item["carbon_kgco2e"] for item in external_processing)
+    # Plant-level headcount: preserve process FTE demand, but employ whole people.
+    # Individual technology costs remain analytical FTE allocations. The additional
+    # half/full FTE payroll and overhead are added only once at plant level.
+    operator_demand_fte = float(total_operators)
+    required_operators = ceil(operator_demand_fte - 1e-9)
+    unused_operator_fte = max(0.0, required_operators - operator_demand_fte)
+    operator_utilization_pct = (
+        100.0 * operator_demand_fte / required_operators
+        if required_operators else 0.0
+    )
+
+    # Derive the existing daily per-FTE labour cost from the technology totals.
+    # This keeps the adjustment consistent with simulation.costs without
+    # assuming whether operator_rate is per hour, shift, or another unit.
+    technology_labour_cost = sum(
+        float(t["costs"]["labour"])
+        for t in technologies
+        if t.get("execution_mode", "in_house") == "in_house"
+    )
+    daily_labour_cost_per_fte = (
+        technology_labour_cost / operator_demand_fte
+        if operator_demand_fte > 0 else 0.0
+    )
+    extra_labour_cost = unused_operator_fte * daily_labour_cost_per_fte
+
+    # Match the configured overhead treatment for incremental payroll.
+    overhead_percentage = float(production["Cost_Overhead_Factor_(%)"])
+    extra_overhead_cost = extra_labour_cost * overhead_percentage / 100.0
+
+    total_labour_cost += extra_labour_cost
+    total_overhead_cost += extra_overhead_cost
+    total_operating_cost += extra_labour_cost + extra_overhead_cost
     total_cost = total_operating_cost + total_material_cost + external_cost
 
 
@@ -496,7 +529,26 @@ def run(request, user: User):
                 total_machines,
 
             "operators":
-                total_operators,
+                required_operators,
+
+            "operator_utilization": {
+                "required_fte": round(operator_demand_fte, 4),
+                "headcount": required_operators,
+                "utilization_percent": round(operator_utilization_pct, 2),
+                "unused_fte": round(unused_operator_fte, 4),
+                # Accounting illustration, not a person-specific shift assignment.
+                "underutilized_operator": (
+                    {
+                        "operator_number": required_operators,
+                        "utilization_percent": round(
+                            100.0 * (1.0 - unused_operator_fte), 2
+                        ),
+                    }
+                    if unused_operator_fte > 1e-9 else None
+                ),
+                "additional_labour_cost_per_day": round(extra_labour_cost, 2),
+                "additional_overhead_cost_per_day": round(extra_overhead_cost, 2),
+            },
 
 
             # -------------------------
