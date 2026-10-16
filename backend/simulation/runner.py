@@ -403,7 +403,41 @@ def run(request, user: User):
     )
 
     external_processing = flow.get("external_processing", [])
-    external_cost = sum(item["total_cost"] for item in external_processing)
+
+    # Purchased electrode rolls are purchased materials, not external processing
+    # services. Keep their freight in external processing, and never double count.
+    purchased_electrodes = {"cathode": 0.0, "anode": 0.0}
+    external_cost = 0.0
+    for item in external_processing:
+        if (item.get("mode") == "purchased_intermediate"
+                and item.get("branch") in purchased_electrodes):
+            branch = item["branch"]
+            purchase_cost = float(item.get("processing_or_purchase_cost") or 0)
+            purchased_electrodes[branch] += purchase_cost
+            # Preserve any other components of total_cost (normally transport).
+            external_cost += float(item["total_cost"]) - purchase_cost
+        else:
+            external_cost += float(item["total_cost"])
+
+    purchased_electrode_total = sum(purchased_electrodes.values())
+    # Copy the material-cost structure so the existing calculation stays intact.
+    material_costs = dict(material_costs)
+    for branch, purchase_cost in purchased_electrodes.items():
+        branch_costs = dict(material_costs.get(branch) or {})
+        branch_costs["purchased_electrode_roll"] = round(purchase_cost, 2)
+        branch_costs["total"] = round(
+            float(branch_costs.get("total") or 0) + purchase_cost, 2
+        )
+        material_costs[branch] = branch_costs
+    material_costs["purchased_electrodes"] = {
+        "cathode": round(purchased_electrodes["cathode"], 2),
+        "anode": round(purchased_electrodes["anode"], 2),
+        "total": round(purchased_electrode_total, 2),
+    }
+    material_costs["total"] = round(
+        float(material_costs["total"]) + purchased_electrode_total, 2
+    )
+    total_material_cost = float(material_costs["total"])
     external_carbon = sum(item["carbon_kgco2e"] for item in external_processing)
     # Plant-level headcount: preserve process FTE demand, but employ whole people.
     # Individual technology costs remain analytical FTE allocations. The additional
