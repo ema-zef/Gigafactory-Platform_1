@@ -150,7 +150,7 @@ def calculate_machines(output_required, equipment, production, geometry=None):
             capacity_method = 'stored_capacity'
         else:
             raise ValueError(
-                f'{technology_name} ({category or 'unknown category'}): missing usable capacity data. '
+                f"{technology_name} ({category or 'unknown category'}): missing usable capacity data. "
                 'For CELL equipment, configure a positive capacity (cells per cycle) and '
                 'processingtime_min (minutes per cycle), or a positive daily capacity (cells/day). '
                 f'Current values: capacity={capacity}, processingtime_min={processing_time}.'
