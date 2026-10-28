@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
 import ProductConfigurationForm
   from "./ProductConfigurationForm";
@@ -11,6 +12,8 @@ import SimulationResultsPanel
 from "./SimulationResultsPanel";
 
 export default function ProductConfigurationManager() {
+
+  const navigate = useNavigate();
 
   const [records, setRecords] =
     useState([]);
@@ -99,6 +102,11 @@ export default function ProductConfigurationManager() {
           columns={columns}
           endpoint="product_configuration"
           reload={loadData}
+          onProductCreated={(productCode) => {
+            navigate("/materials", {
+              state: { productCode, requireMaterial: true }
+            });
+          }}
         />
 
       </div>

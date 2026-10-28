@@ -1,184 +1,760 @@
 /* =====================================================
-   PAGE
+   PAGE CONTAINER
 ===================================================== */
 
-.route-builder{
-    width:100%;
-    max-width:1800px;
-    margin:0 auto;
-    padding:0 24px 24px;
-    display:flex;
-    flex-direction:column;
-    gap:24px;
-    box-sizing:border-box;
+.route-builder {
+
+    width: 100%;
+
+    max-width: 1800px;
+
+    margin: 0 auto;
+
+    padding: 24px 32px 40px;
+	
+	padding-top: 2px;
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 24px;
+
+    box-sizing: border-box;
+
 }
 
+/* Prevent oversized elements from overflowing */
+
+.route-builder * {
+
+    box-sizing: border-box;
+
+}
+
+/* Keep content centred on ultra-wide monitors */
+
+@media (min-width: 2000px) {
+
+    .route-builder {
+
+        max-width: 1900px;
+
+    }
+
+}
+
+/* Laptop */
+
+@media (max-width: 1400px) {
+
+    .route-builder {
+
+        padding: 20px 24px 32px;
+
+    }
+
+}
+
+/* Tablet */
+
+@media (max-width: 900px) {
+
+    .route-builder {
+
+        padding: 16px;
+
+        gap: 20px;
+
+    }
+
+}
+
+/* Mobile */
+
+@media (max-width: 600px) {
+
+    .route-builder {
+
+        padding: 12px;
+
+        gap: 16px;
+
+    }
+
+}
 
 /* =====================================================
-   HEADER
+   ROUTE BUILDER HEADER
 ===================================================== */
 
-.route-header{
+.builder-page-header {
 
-    display:grid;
-    grid-template-columns:1fr 1fr;
-    gap:24px;
+    display: flex;
 
-}
+    flex-direction: column;
 
-.route-header-card{
+    gap: 12px;
 
-    background:#fff;
-    border-radius:12px;
-    padding:18px;
-    border:1px solid #dbe3ef;
-    box-shadow:0 4px 12px rgba(0,0,0,.05);
+    margin-bottom: 8px;
 
 }
 
-.route-header-card label{
+/* ---------------------------------
+   Toolbar
+---------------------------------- */
 
-    display:block;
-    margin-bottom:8px;
-    font-weight:600;
+.builder-toolbar {
+
+    display: grid;
+
+    grid-template-columns: 1fr auto;
+
+    align-items: center;
+
+    width: 100%;
+
+    min-height: 60px;
+
+}
+
+/* ---------------------------------
+   Backend Status
+---------------------------------- */
+
+.builder-toolbar-center {
+
+    display: flex;
+
+    justify-content: center;
+
+    align-items: center;
+
+    gap: 10px;
+
+    font-size: 15px;
+
+    font-weight: 600;
+
+    color: #198754;
+
+}
+
+/* Green connection dot */
+
+.status-dot {
+
+    width: 10px;
+
+    height: 10px;
+
+    border-radius: 50%;
+
+    background: #22c55e;
+
+    box-shadow: 0 0 8px rgba(34,197,94,.45);
+
+}
+
+/* ---------------------------------
+   Action Buttons
+---------------------------------- */
+
+.builder-toolbar-right {
+
+    display: flex;
+
+    justify-content: flex-end;
+
+    align-items: center;
+
+    gap: 14px;
+
+}
+
+/* ---------------------------------
+   Title
+---------------------------------- */
+
+.builder-page-title{
+
+    margin-top:8px;
+	
+	margin-bottom:24px;
+
+}
+
+.builder-page-title h1{
+
+    margin:0;
+
+    font-size:48px;
+
     color:#173b73;
 
+    font-weight:700;
+
 }
 
-.route-header-card select{
+/* ---------------------------------
+   Subtitle
+---------------------------------- */
 
-    width:100%;
-    padding:10px;
-    border:1px solid #ccd7e6;
-    border-radius:6px;
-    font-size:14px;
+.builder-subtitle{
+
+    margin:6px 0 0;
+
+    color:#66758c;
+
+    font-size:18px;
+
+}
+
+/* =====================================================
+   RESPONSIVE
+===================================================== */
+
+@media (max-width: 1100px) {
+
+    .builder-toolbar {
+
+        display: flex;
+
+        flex-direction: column;
+
+        gap: 18px;
+
+        align-items: stretch;
+
+    }
+
+    .builder-toolbar-center {
+
+        justify-content: center;
+
+    }
+
+    .builder-toolbar-right {
+
+        justify-content: center;
+
+        flex-wrap: wrap;
+
+    }
+
+}
+
+@media (max-width: 650px) {
+
+    .builder-toolbar-right {
+
+        flex-direction: column;
+
+        width: 100%;
+
+    }
+
+    .builder-toolbar-right button {
+
+        width: 100%;
+
+    }
+
+}
+
+/* =====================================================
+   HEADER ACTION BUTTONS
+===================================================== */
+
+.builder-toolbar-right button {
+
+    height: 42px;
+
+    padding: 0 20px;
+
+    border-radius: 8px;
+
+    border: none;
+
+    cursor: pointer;
+
+    font-size: 14px;
+
+    font-weight: 600;
+
+    display: inline-flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    gap: 6px;
+
+    transition: all .2s ease;
+
+}
+
+
+/* ---------------------------------
+   Reset Button
+---------------------------------- */
+
+/* ---------------------------------
+   Common button styling
+---------------------------------- */
+
+.reset-route-btn,
+.save-route-btn,
+.run-simulation-btn{
+
+    height:46px;
+
+    padding:0 22px;
+
+    border-radius:8px;
+
+    font-size:15px;
+
+    font-weight:600;
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+    cursor:pointer;
+
+    transition:all .2s ease;
+
+}
+
+/* ---------------------------------
+   Reset Button
+---------------------------------- */
+
+.reset-route-btn{
+
+    background:#eef2f7;
+
+    color:#334155;
+
+    border:1px solid #d7dee8;
+
+}
+
+.reset-route-btn:hover{
+
+    background:#dfe7f1;
+
+    transform:translateY(-1px);
+
+}
+
+/* ---------------------------------
+   Save Route Button
+---------------------------------- */
+
+.save-route-btn{
+
+    background:#64748b;
+
+    color:white;
+
+    border:none;
+
+}
+
+.save-route-btn:hover{
+
+    background:#475569;
+
+    transform:translateY(-1px);
+
+}
+
+/* ---------------------------------
+   Run Simulation Button
+---------------------------------- */
+
+.run-simulation-btn{
+
+    background:#173b73;
+
+    color:white;
+
+    border:none;
+
+}
+
+.run-simulation-btn:hover{
+
+    background:#0f2b55;
+
+    transform:translateY(-1px);
+
+}
+
+
+/* ---------------------------------
+   Active / Click Effect
+---------------------------------- */
+
+.builder-toolbar-right button:active {
+
+    transform: translateY(1px);
+
+}
+
+
+/* ---------------------------------
+   Disabled Buttons
+---------------------------------- */
+
+.builder-toolbar-right button:disabled {
+
+    opacity: .55;
+
+    cursor: not-allowed;
+
+    transform: none;
 
 }
 
 
 /* =====================================================
-   MAIN LAYOUT
+   RESPONSIVE BUTTONS
+===================================================== */
+
+@media (max-width: 650px) {
+
+    .builder-toolbar-right button {
+
+        width: 100%;
+
+    }
+
+}
+
+/* =====================================================
+   MAIN PAGE LAYOUT
 ===================================================== */
 
 .route-layout{
 
     display:grid;
 
-    grid-template-columns:1fr 1fr;
+    grid-template-columns:55% 45%;
 
-    gap:30px;
+    gap:24px;
 
     align-items:start;
 
 }
 
+
+/* =====================================================
+   LEFT PANEL
+===================================================== */
+
 .route-left{
 
     display:flex;
+
     flex-direction:column;
+
     gap:24px;
-    min-width:0;
+	
+	min-width:0;
 
 }
+
+
+/* =====================================================
+   RIGHT PANEL
+===================================================== */
 
 .route-right{
 
     position:sticky;
-    top:20px;
-    align-self:start;
 
-    padding-left:8px;
+    top:20px;
+	
+	min-width:0;
 
 }
 
 
 /* =====================================================
-   CARDS
+   RESPONSIVE
 ===================================================== */
 
-.route-card{
+/* Large Laptop */
 
-    background:#fff;
-    border-radius:12px;
-    border:1px solid #dbe3ef;
-    box-shadow:0 4px 12px rgba(0,0,0,.05);
-    padding:18px;
+@media (max-width: 1500px) {
+
+    .route-layout {
+
+        grid-template-columns: 55% 45%;
+
+    }
 
 }
 
-.route-title{
 
-    margin-bottom:14px;
-    color:#173b73;
-    font-size:28px;
-    font-weight:700;
+/* Laptop */
+
+@media (max-width: 1300px) {
+
+    .route-layout {
+
+        grid-template-columns: 58% 42%;
+
+    }
+
+}
+
+
+/* Tablet */
+
+@media (max-width: 1100px) {
+
+    .route-layout {
+
+        grid-template-columns: 1fr;
+
+    }
+
+    .route-right {
+
+        position: relative;
+
+        top: auto;
+
+    }
+
+}
+
+
+/* Mobile */
+
+@media (max-width: 700px) {
+
+    .route-layout {
+
+        gap: 20px;
+
+    }
+
+}
+
+/* =====================================================
+   PLANT / PRODUCT SELECTION PANEL
+===================================================== */
+
+.selection-panel{
+
+    display:grid;
+
+    grid-template-columns:1fr 1fr;
+
+    gap:24px;
+
+}
+
+.selection-card{
+
+    width:100%;
 
 }
 
 
 /* =====================================================
-   TABLE
+   ROUTE CARDS
+===================================================== */
+
+.route-card {
+
+    background: #ffffff;
+
+    border: 1px solid #dbe3ef;
+
+    border-radius: 12px;
+
+    padding: 20px;
+
+    box-shadow: 0 4px 12px rgba(0,0,0,.05);
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 14px;
+
+}
+
+
+/* =====================================================
+   CARD TITLES
+===================================================== */
+
+.route-title {
+
+    margin: 0;
+
+    color: #173b73;
+
+    font-size: 20px;
+
+    font-weight: 700;
+
+    line-height: 1.2;
+
+}
+
+
+/* =====================================================
+   SELECT BOXES
+===================================================== */
+
+.route-card select {
+
+    width: 100%;
+
+    height: 42px;
+
+    padding: 0 14px;
+
+    border: 1px solid #cfd8e5;
+
+    border-radius: 8px;
+
+    background: #ffffff;
+
+    font-size: 14px;
+
+    color: #334155;
+
+    transition: border-color .2s ease,
+
+                box-shadow .2s ease;
+
+}
+
+
+.route-card select:focus {
+
+    outline: none;
+
+    border-color: #173b73;
+
+    box-shadow: 0 0 0 3px rgba(23,59,115,.12);
+
+}
+
+
+/* =====================================================
+   RESPONSIVE
+===================================================== */
+
+@media (max-width: 900px) {
+
+    .selection-panel {
+
+        grid-template-columns: 1fr;
+
+    }
+
+}
+
+/* =====================================================
+   ROUTE TABLE WRAPPER
 ===================================================== */
 
 .table-wrapper{
+
+    width:100%;
 
     overflow-x:auto;
 
 }
 
+/* =====================================================
+   ROUTE TABLE
+===================================================== */
+
 .route-table{
 
     width:100%;
+
+    table-layout:auto;
+
     border-collapse:collapse;
-    table-layout:fixed;
 
 }
-
-.route-table th{
-
-    background:#173b73;
-    color:#fff;
-    padding:10px 8px;
-    text-align:center;
-    vertical-align:middle;
-    font-size:14px;
-    font-weight:600;
-
-}
-
-/* Centre only the Quality column */
-
-.route-table td:nth-child(5) input{
-    text-align:center;
-}
-
-.route-table td{
-
-    border:1px solid #e3e8f2;
-    padding:6px;
-    vertical-align:middle;
-
-}
-
 
 /* =====================================================
-   COLUMN WIDTHS
+   TABLE HEADERS
 ===================================================== */
 
+.route-table thead th {
+
+    background: #173b73;
+
+    color: white;
+
+    font-size:13px;
+
+    font-weight: 600;
+
+    text-align: center;
+
+    padding:8px 6px;
+
+    border: 1px solid #d4dce8;
+
+}
+
+/* =====================================================
+   TABLE CELLS
+===================================================== */
+
+.route-table td {
+
+    border: 1px solid #e2e8f0;
+
+    padding:4px;
+
+    vertical-align: middle;
+
+    background: white;
+
+}
+
+.route-table tbody tr:hover {
+
+    background: #f8fbff;
+
+}
+
+/* ==========================================
+   COLUMN WIDTHS
+========================================== */
+
 .step-col{
-    width:38px;
+    width:45px;
 }
 
 .equipment-col{
-    width:35%;
+    width:180px;
 }
 
 .process-col{
-    width:20%;
+    width:130px;
 }
 
 .category-col{
-    width:11%;
+    width:110px;
 }
 
 .quality-col{
@@ -189,296 +765,740 @@
     width:75px;
 }
 
-
 /* =====================================================
    INPUTS
+===================================================== */
+
+.route-table input,
+.route-table select{
+
+    width: 100%;
+
+    height:30px;
+
+    padding:0 6px;
+
+    border: 1px solid #cfd8e5;
+
+    border-radius: 6px;
+
+    font-size:12px;
+
+    color: #334155;
+
+    background: white;
+
+}
+
+/* =====================================================
+   SELECT BOXES
 ===================================================== */
 
 .route-table select,
 .route-table input{
 
+    height:30px;
+
+    padding:2px 6px;
+
+    font-size:12px;
+
+}
+
+.route-table select:hover {
+
+    border-color: #173b73;
+
+}
+
+.route-table select:focus {
+
+    outline: none;
+
+    border-color: #173b73;
+
+    box-shadow: 0 0 0 3px rgba(23,59,115,.12);
+
+}
+
+/* =====================================================
+   READ ONLY FIELDS
+===================================================== */
+
+.route-table input[readonly] {
+
+    background: #f4f7fb;
+
+    color: #475569;
+
+    font-weight: 500;
+
+    cursor: default;
+
+}
+
+/* =====================================================
+   QUALITY COLUMN
+===================================================== */
+
+.quality-cell input {
+
+    text-align: center;
+
+    font-weight: 600;
+
+    color: #173b73;
+
+}
+
+/* =====================================================
+   STEP NUMBER
+===================================================== */
+
+.route-table td:first-child {
+
+    text-align: center;
+
+    font-weight: 700;
+
+    color: #173b73;
+
+}
+
+/* =====================================================
+   ROUTE ACTION BUTTONS
+===================================================== */
+
+.route-actions-cell {
+
+    display: flex;
+
+    justify-content: center;
+
+    align-items: center;
+
+    gap: 6px;
+
+}
+
+/* Individual action buttons */
+
+.route-actions-cell button {
+
+    width:22px;
+
+    height:22px;
+
+    border: none;
+
+    border-radius: 6px;
+
+    background: #eef4fb;
+
+    color: #173b73;
+
+    font-size:11px;
+
+    cursor: pointer;
+
+    transition: all .2s ease;
+	
+
+}
+
+/* Hover */
+
+.route-actions-cell button:hover {
+
+    background: #dbe8fa;
+
+    transform: translateY(-1px);
+
+}
+
+/* Click */
+
+.route-actions-cell button:active {
+
+    transform: translateY(1px);
+
+}
+
+/* Disabled */
+
+.route-actions-cell button:disabled {
+
+    opacity: .4;
+
+    cursor: not-allowed;
+
+    transform: none;
+
+}
+
+/* ==========================================
+   DELETE BUTTON
+========================================== */
+
+.route-actions-cell button:last-child {
+
+    background: #fff2f2;
+
+    color: #c62828;
+
+}
+
+.route-actions-cell button:last-child:hover {
+
+    background: #ffdcdc;
+
+}
+
+/* ==========================================
+   ADD STEP BUTTON
+========================================== */
+
+.add-step-btn {
+
+    width: 100%;
+
+    margin-top: 16px;
+
+    padding: 12px;
+
+    border: none;
+
+    border-radius: 8px;
+
+    background: #173b73;
+
+    color: white;
+
+    font-size: 14px;
+
+    font-weight: 600;
+
+    cursor: pointer;
+
+    transition: all .2s ease;
+
+}
+
+.add-step-btn:hover {
+
+    background: #0f2b55;
+
+    transform: translateY(-1px);
+
+}
+
+.add-step-btn:active {
+
+    transform: translateY(1px);
+
+}
+
+/* =====================================================
+   SIMULATION RESULTS PANEL
+===================================================== */
+
+.simulation-panel{
+
     width:100%;
-    height:32px;
-    padding:4px 8px;
-    border:1px solid #cfd8e5;
-    border-radius:6px;
-    box-sizing:border-box;
-    background:white;
-    font-size:13px;
-
 }
-
-.route-table input[readonly]{
-
-    background:#f5f8fc;
-
-}
-
 
 /* =====================================================
-   CATEGORY
+   PANEL HEADER
 ===================================================== */
 
-.route-category{
+.simulation-panel-header {
 
-    font-weight:600;
-    color:#173b73;
-    font-size:13px;
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: center;
+
+    border-bottom: 1px solid #edf2f7;
+
+    padding-bottom: 14px;
 
 }
 
+.simulation-panel-title {
+
+    margin: 0;
+
+    font-size: 24px;
+
+    font-weight: 700;
+
+    color: #173b73;
+
+}
+
+.simulation-panel-subtitle {
+
+    margin: 6px 0 0;
+
+    font-size: 14px;
+
+    color: #64748b;
+
+}
 
 /* =====================================================
-   ACTION BUTTONS
+   RESULTS GRID
 ===================================================== */
 
-.route-actions-cell{
+.results-grid {
 
-    display:flex;
-    justify-content:center;
-    gap:4px;
+    display: grid;
 
-}
+    grid-template-columns: repeat(2, 1fr);
 
-.route-actions-cell button{
-
-    width:26px;
-    height:26px;
-    border:none;
-    border-radius:6px;
-    cursor:pointer;
-    background:#eef4fb;
-    transition:.2s;
+    gap: 18px;
 
 }
-
-.route-actions-cell button:hover{
-
-    background:#dbe7f8;
-
-}
-
 
 /* =====================================================
-   ADD STEP
+   RESULT CARD
 ===================================================== */
 
-.add-step-btn{
+.result-card {
 
-    margin-top:14px;
-    width:100%;
-    padding:11px;
-    border:none;
-    border-radius:8px;
-    background:#173b73;
-    color:white;
-    cursor:pointer;
-    font-weight:600;
-    transition:.2s;
+    background: #f8fbff;
+
+    border: 1px solid #dce7f5;
+
+    border-radius: 10px;
+
+    padding: 18px;
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 8px;
+
+    transition: .2s;
 
 }
 
-.add-step-btn:hover{
+.result-card:hover {
 
-    background:#0e2d58;
+    border-color: #173b73;
+
+    transform: translateY(-2px);
 
 }
-
 
 /* =====================================================
-   FOOTER
+   LABEL
 ===================================================== */
 
-.route-footer{
+.result-label {
 
-    display:flex;
-    justify-content:flex-end;
-    gap:14px;
-    margin-top:20px;
+    font-size: 13px;
 
-}
+    font-weight: 600;
 
-.save-route-btn,
-.run-simulation-btn{
+    color: #64748b;
 
-    padding:12px 22px;
-    border:none;
-    border-radius:8px;
-    cursor:pointer;
-    font-weight:600;
-    font-size:14px;
-    transition:.2s;
+    text-transform: uppercase;
+
+    letter-spacing: .4px;
 
 }
 
-.save-route-btn{
+/* =====================================================
+   VALUE
+===================================================== */
 
-    background:#5f6b7a;
-    color:white;
+.result-value {
 
-}
+    font-size: 28px;
 
-.save-route-btn:hover{
+    font-weight: 700;
 
-    background:#495462;
+    color: #173b73;
 
-}
-
-.run-simulation-btn{
-
-    background:#173b73;
-    color:white;
+    line-height: 1.2;
 
 }
 
-.run-simulation-btn:hover{
+/* =====================================================
+   UNIT
+===================================================== */
 
-    background:#0d2f61;
+.result-unit {
+
+    font-size: 13px;
+
+    color: #64748b;
 
 }
 
+/* =====================================================
+   SUMMARY
+===================================================== */
+
+.simulation-summary {
+
+    background: #eef4fb;
+
+    border-left: 4px solid #173b73;
+
+    border-radius: 8px;
+
+    padding: 16px;
+
+    font-size: 14px;
+
+    line-height: 1.6;
+
+    color: #334155;
+
+}
+
+/* =====================================================
+   EMPTY STATE
+===================================================== */
+
+.simulation-empty {
+
+    display: flex;
+
+    justify-content: center;
+
+    align-items: center;
+
+    min-height: 260px;
+
+    border: 2px dashed #d6deea;
+
+    border-radius: 10px;
+
+    color: #94a3b8;
+
+    font-size: 16px;
+
+    text-align: center;
+
+    padding: 24px;
+
+}
+
+/* =====================================================
+   TABLE (if detailed results exist)
+===================================================== */
+
+.simulation-table {
+
+    width: 100%;
+
+    border-collapse: collapse;
+
+}
+
+.simulation-table th {
+
+    background: #173b73;
+
+    color: white;
+
+    padding: 10px;
+
+    text-align: left;
+
+    font-size: 13px;
+
+}
+
+.simulation-table td {
+
+    border-bottom: 1px solid #e6edf7;
+
+    padding: 10px;
+
+    font-size: 13px;
+
+}
+
+.simulation-table tbody tr:hover {
+
+    background: #f7fbff;
+
+}
 
 /* =====================================================
    RESPONSIVE
 ===================================================== */
 
-@media (max-width:1500px){
+@media (max-width: 900px) {
 
-    .route-layout{
+    .results-grid {
 
-        grid-template-columns:56% 44%;
-
-    }
-
-}
-
-@media (max-width:1300px){
-
-    .route-layout{
-
-        grid-template-columns:60% 40%;
+        grid-template-columns: 1fr;
 
     }
 
 }
 
-@media (max-width:1150px){
+/* =====================================================
+   GLOBAL SPACING
+===================================================== */
+
+.route-builder {
+
+    animation: fadeIn .25s ease;
+
+}
+
+/* =====================================================
+   SMOOTH CARD ANIMATION
+===================================================== */
+
+.route-card{
+
+    width:100%;
+
+    box-sizing:border-box;
+
+    overflow:hidden;
+
+}
+
+.route-card:hover,
+.simulation-panel:hover {
+
+    box-shadow: 0 8px 20px rgba(0,0,0,.08);
+
+}
+
+/* =====================================================
+   SCROLLBAR
+===================================================== */
+
+.table-wrapper::-webkit-scrollbar {
+
+    height: 8px;
+
+}
+
+.table-wrapper::-webkit-scrollbar-track {
+
+    background: #edf2f7;
+
+    border-radius: 8px;
+
+}
+
+.table-wrapper::-webkit-scrollbar-thumb {
+
+    background: #b7c4d8;
+
+    border-radius: 8px;
+
+}
+
+.table-wrapper::-webkit-scrollbar-thumb:hover {
+
+    background: #8da3c4;
+
+}
+
+/* =====================================================
+   RESPONSIVE
+===================================================== */
+
+/* Large Desktop */
+
+@media (min-width: 1800px){
+
+    .route-builder{
+
+        max-width: 1900px;
+
+    }
+
+}
+
+/* Desktop */
+
+@media (max-width: 1500px){
 
     .route-layout{
 
-        grid-template-columns:1fr;
+        grid-template-columns: 55% 45%;
+
+    }
+
+}
+
+/* Laptop */
+
+@media (max-width: 1300px){
+
+    .route-layout{
+
+        grid-template-columns: 58% 42%;
+
+    }
+
+    .equipment-col{
+
+        width: 34%;
+
+    }
+
+}
+
+/* Tablet */
+
+@media (max-width: 1100px){
+
+    .route-layout{
+
+        grid-template-columns: 1fr;
 
     }
 
     .route-right{
 
-        position:relative;
-        top:auto;
+        position: relative;
+
+        top: auto;
+
+    }
+
+    .selection-panel{
+
+        grid-template-columns: 1fr;
 
     }
 
 }
 
-@media (max-width:900px){
+/* Mobile */
 
-    .route-header{
+@media (max-width: 700px){
 
-        grid-template-columns:1fr;
+    .builder-toolbar{
+
+        flex-direction: column;
+
+        gap: 16px;
+
+    }
+
+    .builder-toolbar-right{
+
+        width: 100%;
+
+        justify-content: center;
+
+        flex-wrap: wrap;
+
+    }
+
+    .builder-toolbar-right button{
+
+        width: 100%;
+
+    }
+
+    .route-table{
+
+        font-size: 12px;
+
+    }
+
+    .route-table th,
+    .route-table td{
+
+        padding: 6px;
+
+    }
+
+    .route-card{
+
+        padding: 16px;
+
+    }
+
+    .simulation-panel{
+
+        padding: 18px;
 
     }
 
 }
 
-.builder-page-header{
+/* =====================================================
+   FADE IN
+===================================================== */
 
-    display:grid;
+@keyframes fadeIn{
 
-    grid-template-columns:1fr auto auto;
+    from{
+
+        opacity: 0;
+
+        transform: translateY(10px);
+
+    }
+
+    to{
+
+        opacity: 1;
+
+        transform: translateY(0);
+
+    }
+
+}
+
+/* ==========================================
+   FLOATING HEADER ACTIONS
+========================================== */
+
+.builder-header-actions{
+
+    position:fixed !important;
+
+    top:14px !important;
+
+    right:30px !important;
+
+    left:auto !important;
+
+    display:flex !important;
+
+    justify-content:flex-end;
 
     align-items:center;
-
-    gap:24px;
-
-    margin-bottom:28px;
-
-}
-
-.builder-page-title h1{
-
-    margin:0;
-
-    font-size:34px;
-
-    color:#173b73;
-
-}
-
-.builder-page-title p{
-
-    margin-top:6px;
-
-    color:#66758c;
-
-    font-size:15px;
-
-}
-
-.builder-page-status{
-
-    display:flex;
-
-    align-items:center;
-
-    gap:10px;
-
-    font-weight:600;
-
-    color:#1d7f35;
-
-}
-
-.status-dot{
-
-    width:12px;
-
-    height:12px;
-
-    border-radius:50%;
-
-    background:#28c840;
-
-}
-
-.builder-page-actions{
-
-    display:flex;
 
     gap:12px;
 
-}
-
-.reset-route-btn{
-
-    background:#eceff5;
-
-    border:none;
-
-    border-radius:8px;
-
-    padding:12px 20px;
-
-    cursor:pointer;
-
-    font-weight:600;
+    z-index:99999;
 
 }
 
-.reset-route-btn:hover{
+.route-table select{
 
-    background:#dde3ed;
+    overflow:hidden;
+
+    white-space:nowrap;
+
+    text-overflow:ellipsis;
 
 }
-
-.main-content{
-    padding: 24px 32px;
-}
+/* Title and scenario controls on the same row. */
+.builder-page-title { display:flex; flex-direction:row; align-items:center; justify-content:space-between; flex-wrap:nowrap; gap:24px; width:100%; min-width:0; }
+.builder-title-text { flex:0 0 auto; min-width:0; }
+.builder-page-title .scenario-save-controls { display:flex; flex-direction:row; align-items:center; justify-content:flex-end; flex-wrap:nowrap; gap:8px; margin-left:auto; min-width:0; }
+.builder-page-title .scenario-save-controls input { width:240px; flex:0 0 240px; }
+.builder-page-title .scenario-save-controls select { flex:0 0 auto; }
+.builder-page-title .scenario-save-controls span { white-space:nowrap; }
+@media (max-width:900px) { .builder-page-title { overflow-x:auto; } }

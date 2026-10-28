@@ -69,14 +69,11 @@
 
 }
 
-.sidebar-header h2{
-
-    font-size:18px;
-
-    font-weight:600;
-
-    letter-spacing:.5px;
-
+.sidebar-header h2 {
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: .5px;
+    color: #ffffff;
 }
 
 

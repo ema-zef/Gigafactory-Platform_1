@@ -14,28 +14,18 @@ export default function EquipmentDatabase() {
     const [editingId, setEditingId] = useState(null);
     const [editData, setEditData] = useState({});
 
+  const scrollStyle = { maxHeight: "70vh", overflow: "auto", position: "relative" };
+  const tableStyle = { width: "max-content", minWidth: "100%", borderCollapse: "separate", borderSpacing: 0 };
+  const stickyHeaderStyle = { position: "sticky", top: 0, zIndex: 3, background: "#173b73", color: "white" };
+  const stickyCornerStyle = { ...stickyHeaderStyle, left: 0, zIndex: 5, minWidth: 80, boxShadow: "3px 0 6px -4px rgba(0,0,0,.45)" };
+  const stickyFirstCellStyle = { position: "sticky", left: 0, zIndex: 2, background: "#fff", minWidth: 80, boxShadow: "3px 0 6px -4px rgba(0,0,0,.35)" };
+
+
     useEffect(() => {
-        loadColumns();
         loadEquipment();
     }, []);
 
-async function loadColumns() {
 
-    try {
-
-        const res = await axios.get(`${API}/equipment/options`);
-
-        console.log("Equipment schema response:", res.data);
-
-        setColumns(Array.isArray(res.data) ? res.data : (res.data.columns ?? []));
-
-    } catch (err) {
-
-        console.error("Equipment schema error:", err);
-
-    }
-
-}
 
 async function loadEquipment() {
 
@@ -43,13 +33,31 @@ async function loadEquipment() {
 
         const res = await axios.get(`${API}/equipment`);
 
-        console.log(res.data[0]);
+        const rows = Array.isArray(res.data)
+            ? res.data
+            : [];
 
-        setEquipment(res.data ?? []);
+        setEquipment(rows);
+
+        if (rows.length > 0) {
+
+            const cols = Object.keys(rows[0])
+                .filter(key => key !== "id")
+                .map(key => ({
+                    column_name: key
+                }));
+
+            setColumns(cols);
+
+        } else {
+
+            setColumns([]);
+
+        }
 
     } catch (err) {
 
-        console.error("Equipment data error:", err);
+        console.error(err);
 
     }
 
@@ -115,19 +123,19 @@ async function loadEquipment() {
 
             <h1>Equipment Database</h1>
 
-            <div className="table-wrapper">
+            <div className="table-wrapper" style={scrollStyle}>
 
-                <table className="equipment-table">
+                <table className="equipment-table" style={tableStyle}>
 
                     <thead>
 
                         <tr>
 
-                            <th>ID</th>
+                            <th style={stickyCornerStyle}>ID</th>
 
                             {columns.map(col => (
 
-                                <th key={col.column_name ?? col.id ?? JSON.stringify(col)}>
+                                <th style={stickyHeaderStyle} key={col.column_name ?? col.id ?? JSON.stringify(col)}>
 
                                     {col.column_name}
 
@@ -135,7 +143,7 @@ async function loadEquipment() {
 
                             ))}
 
-                            <th>Actions</th>
+                            <th style={stickyHeaderStyle}>Actions</th>
 
                         </tr>
 
@@ -147,7 +155,7 @@ async function loadEquipment() {
 
                             <tr key={row.id}>
 
-                                <td>{row.id}</td>
+                                <td style={stickyFirstCellStyle}>{row.id}</td>
 
                                 {columns.map(col => (
 
@@ -243,6 +251,7 @@ async function loadEquipment() {
 
                                             <button
 
+                                                disabled={row.read_only}
                                                 onClick={()=>
 
                                                     startEdit(row)
@@ -257,6 +266,7 @@ async function loadEquipment() {
 
                                             <button
 
+                                                disabled={row.read_only}
                                                 onClick={()=>
 
                                                     deleteEquipment(row.id)
