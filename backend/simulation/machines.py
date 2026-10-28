@@ -24,24 +24,44 @@ def _optional_number(mapping, key):
 
 def calculate_machines(output_required, equipment, production, geometry=None):
     hours_per_shift = float(production['hours_per_shift'])
-    shifts = int(production['no_of_shifts_per_day'])
-    # available_time_min is the TOTAL available production minutes per day.
-    available_minutes_day = float(production['available_time_min'])
-    scheduled_minutes_day = hours_per_shift * shifts * 60
-    if hours_per_shift <= 0 or shifts <= 0 or not math.isfinite(available_minutes_day) or available_minutes_day <= 0:
-        raise ValueError('Shift hours, shifts/day, and available daily minutes must be positive.')
-    if available_minutes_day > scheduled_minutes_day:
+    shifts = float(production['no_of_shifts_per_day'])
+    days = float(production['number_of_days_per_year'])
+
+    # Legacy column name: available_time_min stores ANNUAL HOURS.
+    available_hours_year = float(production['available_time_min'])
+
+    if not math.isfinite(days) or not days.is_integer() or not 1 <= days <= 366:
         raise ValueError(
-            f'Available daily minutes ({available_minutes_day:g}) exceed scheduled '
-            f'minutes ({scheduled_minutes_day:g}); check available_time_min units.'
+            'number_of_days_per_year must be a whole number from 1 to 366'
+        )
+
+    if (
+        not math.isfinite(hours_per_shift)
+        or hours_per_shift <= 0
+        or not math.isfinite(shifts)
+        or not shifts.is_integer()
+        or shifts <= 0
+        or not math.isfinite(available_hours_year)
+        or available_hours_year <= 0
+    ):
+        raise ValueError(
+            'Shift hours, shifts/day, and available annual hours must be positive; '
+            'shifts/day must be a whole number.'
+        )
+
+    shifts = int(shifts)
+    scheduled_minutes_day = hours_per_shift * shifts * 60
+    available_hours_day = available_hours_year / days
+    available_minutes_day = available_hours_day * 60
+
+    if available_minutes_day > scheduled_minutes_day + 1e-9:
+        raise ValueError(
+            f'Available annual hours ({available_hours_year:g}) exceed '
+            f'the scheduled annual hours '
+            f'({hours_per_shift * shifts * days:g}).'
         )
 
     uptime = available_minutes_day / scheduled_minutes_day
-    available_hours_day = available_minutes_day / 60
-    days = float(production['number_of_days_per_year'])
-    if not math.isfinite(days) or not days.is_integer() or not 1 <= days <= 366:
-        raise ValueError('number_of_days_per_year must be a whole number from 1 to 366')
-    available_hours_year = available_hours_day * int(days)
 
     technology_name = equipment.get('technology_name') or 'Unknown technology'
     category = (equipment.get('process_category') or '').strip().upper()
@@ -150,7 +170,7 @@ def calculate_machines(output_required, equipment, production, geometry=None):
             capacity_method = 'stored_capacity'
         else:
             raise ValueError(
-                f'{technology_name} ({category or 'unknown category'}): missing usable capacity data. '
+                f'{technology_name} ({category or "unknown category"}): missing usable capacity data. '
                 'For CELL equipment, configure a positive capacity (cells per cycle) and '
                 'processingtime_min (minutes per cycle), or a positive daily capacity (cells/day). '
                 f'Current values: capacity={capacity}, processingtime_min={processing_time}.'
