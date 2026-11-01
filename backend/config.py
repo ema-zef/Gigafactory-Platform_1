@@ -9,6 +9,3 @@ if not DATABASE_URL:
     raise RuntimeError("DATABASE_URL not found")
 
 ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
-
-
-
