@@ -40,9 +40,15 @@ def calculate_costs(
         production["available_time_min"]
     )
 
-    operating_hours_day = (
-        available_hours_year / 365
-    )
+    # Convert annual operating hours to hours per configured operating day.
+    days = float(production["number_of_days_per_year"])
+
+    if not days.is_integer() or not 1 <= days <= 366:
+        raise ValueError(
+            "number_of_days_per_year must be a whole number from 1 to 366"
+        )
+
+    operating_hours_day = available_hours_year / days
 
     operator_count = float(
         operators["operators_min"] or 0

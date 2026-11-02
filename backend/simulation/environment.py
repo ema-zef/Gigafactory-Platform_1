@@ -25,7 +25,16 @@ def calculate_environment(environment_type, config, assignments, production):
             f"{environment_type} was requested without any assigned technologies"
         )
 
-    operating_hours_day = _f(production["available_time_min"]) / 365.0
+    # Legacy available_time_min field stores annual operating HOURS.
+    # Convert to hours per configured operating day.
+    days = float(production["number_of_days_per_year"])
+
+    if not days.is_integer() or not 1 <= days <= 366:
+        raise ValueError(
+            "number_of_days_per_year must be a whole number from 1 to 366"
+        )
+
+    operating_hours_day = _f(production["available_time_min"]) / days
     area_factor = _f(config.get("area_factor"))
     fixed_area_m2 = _f(config.get("fixed_area_m2"))
 

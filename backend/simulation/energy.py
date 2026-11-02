@@ -8,7 +8,15 @@ def calculate_energy(machines, equipment, production):
     if available_hours_year <= 0:
         raise ValueError(f"Invalid annual available hours: {available_hours_year}")
 
-    operating_hours_day = available_hours_year / 365
+    # Convert annual operating hours to hours per configured operating day.
+    days = float(production["number_of_days_per_year"])
+
+    if not days.is_integer() or not 1 <= days <= 366:
+        raise ValueError(
+            "number_of_days_per_year must be a whole number from 1 to 366"
+        )
+
+    operating_hours_day = available_hours_year / days
 
     electricity_kw = float(equipment["electricity_consumption_kwhcell_kwh_min"] or 0)
     gas_kw = float(equipment["natural_gas_energy_consumption_of_kw_min"] or 0)
