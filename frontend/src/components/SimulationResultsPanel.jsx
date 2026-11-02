@@ -16,7 +16,8 @@ export default function SimulationResultsPanel({ simulationResults }) {
     const simulation =
         Array.isArray(simulationResults)
             ? simulationResults
-            : simulationResults?.simulation ??
+            : simulationResults?.technologies ??
+              simulationResults?.simulation ??
               simulationResults?.results ??
               [];
 
@@ -42,16 +43,20 @@ export default function SimulationResultsPanel({ simulationResults }) {
 
     // Build chart/table rows from backend response
     const rows = simulation.map(row => ({
-        technology: row.technology_name,
-        process: row.process,
+        technology: `${row.branch ? `${row.branch} · ` : ""}${row.technology_name}`,
         unit: row.unit,
         output: Number(row.required_output),
-        input: Number(row.required_input),
-        yield: Number(row.quality_rate)
+        cost: Number(row.costs?.total ?? 0),
+        branch: row.branch ?? "",
+        process: row.process ?? "",
+        batches: row.batches ?? "-",
+        machines: row.machines?.machines ?? 0,
+        shifts: row.machines?.uptime ?? "-",
+        operators: row.operators?.operators_min ?? 0,
     }));
 
     const finalRow = simulation.at(-1);
-
+	
     const avgQuality = (
         simulation.reduce(
             (sum, row) => sum + Number(row.quality_rate),
@@ -127,40 +132,46 @@ export default function SimulationResultsPanel({ simulationResults }) {
 
             {/* BAR CHART */}
 
-            <div className="chart-card">
+			<div className="chart-card">
+				<h3>Cost by Process (€)</h3>
 
-                <h3>
-                    Cells per Day by Process
-                </h3>
+				<ResponsiveContainer width="100%" height={360}>
+					<BarChart
+						data={rows}
+						margin={{ top: 10, right: 20, left: 20, bottom: 20 }}
+					>
+						<CartesianGrid strokeDasharray="3 3" />
 
-                <ResponsiveContainer width="100%" height={360}>
+						<XAxis
+							dataKey="technology"
+							angle={-35}
+							textAnchor="end"
+							interval={0}
+							height={90}
+						/>
 
-                    <BarChart data={rows}>
+						<YAxis
+							tickFormatter={value => Number(value).toLocaleString()}
+						/>
 
-                        <CartesianGrid strokeDasharray="3 3" />
+						<Tooltip
+							formatter={value => [
+								Number(value).toLocaleString(undefined, {
+									minimumFractionDigits: 2,
+									maximumFractionDigits: 2,
+								}),
+								"Cost",
+							]}
+						/>
 
-                        <XAxis
-                            dataKey="technology"
-                            angle={-35}
-                            textAnchor="end"
-                            interval={0}
-                            height={90}
-                        />
-
-                        <YAxis />
-
-                        <Tooltip />
-
-                        <Bar
-                            dataKey="output"
-                            fill="#1f4b8f"
-                        />
-
-                    </BarChart>
-
-                </ResponsiveContainer>
-
-            </div>
+						<Bar
+							dataKey="cost"
+							name="Cost"
+							fill="#1f4b8f"
+						/>
+					</BarChart>
+				</ResponsiveContainer>
+			</div>
 
             {/* TABLE */}
 
@@ -177,19 +188,13 @@ export default function SimulationResultsPanel({ simulationResults }) {
                         <thead>
 
                             <tr>
-
                                 <th>Technology</th>
-
-                                <th>Process</th>
-
                                 <th>Unit</th>
-
                                 <th>Output</th>
-
-                                <th>Input</th>
-
-                                <th>Yield</th>
-
+                                <th>Batches</th>
+                                <th>Machines</th>
+                                <th>Shifts</th>
+                                <th>Operators/day</th>
                             </tr>
 
                         </thead>
@@ -199,19 +204,13 @@ export default function SimulationResultsPanel({ simulationResults }) {
                             {rows.map((row, index) => (
 
                                 <tr key={index}>
-
                                     <td>{row.technology}</td>
-
-                                    <td>{row.process}</td>
-
                                     <td>{row.unit}</td>
-
                                     <td>{Math.round(row.output).toLocaleString()}</td>
-
-                                    <td>{Math.round(row.input).toLocaleString()}</td>
-
-                                    <td>{row.yield.toFixed(2)}%</td>
-
+                                    <td>{row.batches}</td>
+                                    <td>{row.machines}</td>
+                                    <td>{row.shifts}</td>
+                                    <td>{row.operators}</td>
                                 </tr>
 
                             ))}

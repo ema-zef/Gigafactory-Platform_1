@@ -1,140 +1,31 @@
-import { useEffect, useState } from "react";
-import axios from "axios";
+import { useLocation, useNavigate } from "react-router-dom";
+import RecordConfigurator from "./RecordConfigurator";
 
-import ProductMaterialForm from "./ProductMaterialForm";
-import ProductMaterialTable from "./ProductMaterialTable";
-
-import "./FormLayout.css";
-
+const groups = [
+  { id: "general", name: "Product & Material", description: "Material identity and associated product" },
+  { id: "cathode", name: "Cathode Materials", description: "Cathode active material, additives, binder and collector" },
+  { id: "anode", name: "Anode Materials", description: "Anode active material, additives, binder and collector" },
+  { id: "assembly", name: "Assembly Materials", description: "Separator, electrolyte, housing and sealing" },
+  { id: "prices", name: "Prices & Impacts", description: "Material prices, transport and environmental factors" },
+];
+function groupFor(key) {
+  const n = key.toLowerCase();
+  if (/productcode|product_code|materialcode|material_code|name|description|type|category/.test(n)) return "general";
+  if (/cath|positive/.test(n)) return "cathode";
+  if (/anode|negative/.test(n)) return "anode";
+  if (/separator|electrolite|electrolyte|housing|sealing|assembly/.test(n)) return "assembly";
+  if (/cost|price|eur|emission|carbon|transport|co2|rate/.test(n)) return "prices";
+  return "other";
+}
 export default function ProductMaterialManager() {
-
-    const API =
-        import.meta.env.VITE_API_URL ||
-        "http://localhost:8000";
-
-    const [records, setRecords] = useState([]);
-    const [columns, setColumns] = useState([]);
-
-    const [showAdd, setShowAdd] = useState(true);
-    const [showTable, setShowTable] = useState(true);
-
-    useEffect(() => {
-        loadData();
-    }, []);
-
-    const loadData = async () => {
-
-  try {
-
-    const schemaResponse = await axios.get(
-      `${API}/product_material/check`
-    );
-
-    setColumns(
-      schemaResponse.data.columns.filter(
-        c => c.column_name !== "id"
-      )
-    );
-
-  } catch (err) {
-
-    console.error(
-      "Schema error:",
-      err
-    );
-
-  }
-
-  try {
-
-    const dataResponse = await axios.get(
-      `${API}/product_material`
-    );
-
-    setRecords(dataResponse.data);
-
-  } catch (err) {
-
-    console.error(
-      "Data error:",
-      err
-    );
-
-    setRecords([]);
-
-  }
-
-};
-
-console.log("Manager columns state:", columns);
-
-    return (
-
-        <div>
-
-            <h2
-                style={{
-                    textAlign: "center",
-                    color: "#173b73",
-                    marginBottom: "25px"
-                }}
-            >
-                Product Material Database
-            </h2>
-
-            <button
-                onClick={() =>
-                    setShowAdd(!showAdd)
-                }
-            >
-                {showAdd
-                    ? "▼ Hide Form"
-                    : "► Add Product Material"}
-            </button>
-
-            {showAdd && (
-
-                <div className="form-card">
-
-                    <div className="form-title">
-
-                        Add Product Material
-
-                    </div>
-
-                    <ProductMaterialForm
-                        columns={columns}
-                        reload={loadData}
-                    />
-
-                </div>
-
-            )}
-
-            <br />
-
-            <button
-                onClick={() =>
-                    setShowTable(!showTable)
-                }
-            >
-                {showTable
-                    ? "▼ Hide Table"
-                    : "► View Product Materials"}
-            </button>
-
-            {showTable && (
-
-                <ProductMaterialTable
-                    data={records}
-                    columns={columns}
-                    reload={loadData}
-                />
-
-            )}
-
-        </div>
-
-    );
-
+  const location = useLocation();
+  const navigate = useNavigate();
+  const productCode = location.state?.requireMaterial ? String(location.state?.productCode || "").trim() : "";
+  return <RecordConfigurator endpoint="product_material" title="Product Material Configurator"
+    subtitle="Choose a product material record and edit its properties by category."
+    groups={groups} groupFor={groupFor} idField="id" preferredId={productCode}
+    initialValues={() => productCode ? { productcode: productCode } : {}}
+    nameFor={r => [r.productcode || r.product_code || "Product", [r.materialcode, r.material_code, r.materialname, r.material_name].find(v => v != null && String(v).trim() && String(v).toLowerCase() !== "undefined") || `Material ${r.id ?? r.row_id ?? "record"}`].join(" · ")}
+    onCreated={() => { if (productCode) navigate("/materials", { replace: true }); }}
+    onSaved={() => { if (productCode) navigate("/materials", { replace: true }); }} />;
 }

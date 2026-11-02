@@ -69,14 +69,11 @@
 
 }
 
-.sidebar-header h2{
-
-    font-size:18px;
-
-    font-weight:600;
-
-    letter-spacing:.5px;
-
+.sidebar-header h2 {
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: .5px;
+    color: #ffffff;
 }
 
 
@@ -276,4 +273,65 @@
 
     }
 
+}
+/* Keep account actions visible while navigation scrolls. */
+.sidebar {
+    box-sizing: border-box;
+    height: 100dvh;
+}
+.sidebar-header,
+.sidebar-footer {
+    flex-shrink: 0;
+}
+.sidebar-menu {
+    min-height: 0;
+}
+.sidebar-footer {
+    text-align: left;
+    padding-bottom: max(16px, env(safe-area-inset-bottom));
+}
+.sidebar-account {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 12px;
+    overflow-wrap: anywhere;
+}
+.sidebar-account-name {
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+}
+.sidebar-account-role {
+    font-size: 12px;
+}
+.sidebar-logout {
+    box-sizing: border-box;
+    position: static;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    min-height: 44px;
+    padding: 10px 14px;
+    border: 1px solid rgba(255,255,255,.4);
+    border-radius: 8px;
+    background: rgba(255,255,255,.1);
+    color: #fff;
+    font: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+}
+.sidebar-logout:hover {
+    background: rgba(255,255,255,.2);
+}
+.sidebar-logout:focus-visible {
+    outline: 2px solid #fff;
+    outline-offset: 3px;
+}
+.sidebar-version {
+    margin-top: 12px;
+    text-align: center;
+    font-size: 11px;
 }

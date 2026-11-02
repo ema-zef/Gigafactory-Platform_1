@@ -11,6 +11,7 @@ import {
     Route,
     BarChart3,
     Settings,
+    LogOut,
     ChevronLeft
 } from "lucide-react";
 
@@ -61,7 +62,9 @@ const menu = [
 export default function Sidebar({
 
     open,
-    closeSidebar
+    closeSidebar,
+    user,
+    onLogout
 
 }) {
 
@@ -87,6 +90,8 @@ export default function Sidebar({
 
                 <button
 
+                    type="button"
+                    aria-label="Close navigation"
                     className="collapse-button"
 
                     onClick={closeSidebar}
@@ -167,7 +172,23 @@ export default function Sidebar({
 
             <div className="sidebar-footer">
 
-                Version 1.0
+                {user && (
+                    <div className="sidebar-account">
+                        <span className="sidebar-account-name">{user.username}</span>
+                        <span className="sidebar-account-role">{user.role}</span>
+                    </div>
+                )}
+
+                <button
+                    type="button"
+                    className="sidebar-logout"
+                    onClick={onLogout}
+                >
+                    <LogOut size={20} aria-hidden="true" />
+                    <span>Log out</span>
+                </button>
+
+                <div className="sidebar-version">Version 1.0</div>
 
             </div>
 
