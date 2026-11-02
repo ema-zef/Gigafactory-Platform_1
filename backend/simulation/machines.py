@@ -25,8 +25,12 @@ def _optional_number(mapping, key):
 def calculate_machines(output_required, equipment, production, geometry=None):
     hours_per_shift = float(production['hours_per_shift'])
     shifts = int(production['no_of_shifts_per_day'])
-    # available_time_min is the TOTAL available production minutes per day.
-    available_minutes_day = float(production['available_time_min'])
+    # Legacy database field: available_time_min stores annual operating HOURS.
+    annual_available_hours = float(production['available_time_min'])
+    days = float(production['number_of_days_per_year'])
+    if not math.isfinite(days) or not days.is_integer() or not 1 <= days <= 366:
+        raise ValueError('number_of_days_per_year must be a whole number from 1 to 366')
+    available_minutes_day = annual_available_hours * 60 / days
     scheduled_minutes_day = hours_per_shift * shifts * 60
     if hours_per_shift <= 0 or shifts <= 0 or not math.isfinite(available_minutes_day) or available_minutes_day <= 0:
         raise ValueError('Shift hours, shifts/day, and available daily minutes must be positive.')
@@ -38,9 +42,6 @@ def calculate_machines(output_required, equipment, production, geometry=None):
 
     uptime = available_minutes_day / scheduled_minutes_day
     available_hours_day = available_minutes_day / 60
-    days = float(production['number_of_days_per_year'])
-    if not math.isfinite(days) or not days.is_integer() or not 1 <= days <= 366:
-        raise ValueError('number_of_days_per_year must be a whole number from 1 to 366')
     available_hours_year = available_hours_day * int(days)
 
     technology_name = equipment.get('technology_name') or 'Unknown technology'
