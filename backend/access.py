@@ -1,7 +1,13 @@
 """Only whitelisted tables/columns. Public SOTA rows are immutable snapshots."""
+import json
 from fastapi import HTTPException
 from sqlalchemy import text
 from database import engine
+from interdependency_parameters import (
+    ELIGIBILITY_TABLES,
+    default_eligibility,
+    validate_eligibility,
+)
 
 TABLES = {
     'equipment': ('id', None),
@@ -10,6 +16,16 @@ TABLES = {
     'production_configuration': ('id', 'code'),
     'environment_configuration': ('id', 'code'),
 }
+
+
+def jsonb_bind_value(table, column, value):
+    if (
+        table in ELIGIBILITY_TABLES
+        and column == "interdependency_parameters"
+    ):
+        return json.dumps(value)
+
+    return value
 
 
 def columns(conn, table):
@@ -87,11 +103,21 @@ def clean_payload(conn, table, payload):
     # Normalize blank form values to SQL NULL. This prevents PostgreSQL
     # numeric/date columns from receiving invalid empty strings.
     # Non-empty values such as "0", "0.5", and normal text are preserved.
-    return {
+
+    result = {
         k: (None if isinstance(v, str) and v.strip() == "" else v)
         for k, v in payload.items()
         if k in allowed and k not in forbidden
     }
+
+    if "interdependency_parameters" in result:
+        result["interdependency_parameters"] = validate_eligibility(
+            table,
+            allowed.keys(),
+            result["interdependency_parameters"],
+        )
+
+    return result
 
 
 def create(table, payload, user):
@@ -99,23 +125,42 @@ def create(table, payload, user):
 
     with engine.begin() as conn:
         values = clean_payload(conn, table, payload)
+
+        if table in ELIGIBILITY_TABLES:
+            available_columns = columns(conn, table)
+
+            if "interdependency_parameters" in available_columns:
+                values.setdefault(
+                    "interdependency_parameters",
+                    default_eligibility(table, available_columns.keys()),
+                )
+
         values["owner_id"] = user.id
 
         keys = list(values)
 
-        # Do not use database column names as SQLAlchemy bind names.
-        # Some columns contain characters such as %, (, and ).
+        # Use safe SQLAlchemy bind names for columns containing
+        # special characters such as %, (, and ).
         bind_values = {
-            f"v{i}": values[key]
+            f"v{i}": jsonb_bind_value(table, key, values[key])
             for i, key in enumerate(keys)
         }
 
+        column_sql = ", ".join(
+            f'"{key}"' for key in keys
+        )
+
+        value_sql = ", ".join(
+            f"CAST(:v{i} AS JSONB)"
+            if table in ELIGIBILITY_TABLES
+            and key == "interdependency_parameters"
+            else f":v{i}"
+            for i, key in enumerate(keys)
+        )
+
         sql = (
-            f"INSERT INTO public.{table} ("
-            + ", ".join(f'"{key}"' for key in keys)
-            + ") VALUES ("
-            + ", ".join(f":v{i}" for i in range(len(keys)))
-            + f') RETURNING "{pk}"'
+            f"INSERT INTO public.{table} ({column_sql}) "
+            f'VALUES ({value_sql}) RETURNING "{pk}"'
         )
 
         record_id = conn.execute(
@@ -143,13 +188,17 @@ def update(table, record_id, payload, user):
         items = list(values.items())
 
         bind_values = {
-            f"v{i}": value
-            for i, (_, value) in enumerate(items)
+            f"v{i}": jsonb_bind_value(table, column, value)
+            for i, (column, value) in enumerate(items)
         }
+
         bind_values["record_id"] = record_id
 
         assignments = ", ".join(
-            f'"{column}"=:v{i}'
+            f'"{column}"=CAST(:v{i} AS JSONB)'
+            if table in ELIGIBILITY_TABLES
+            and column == "interdependency_parameters"
+            else f'"{column}"=:v{i}'
             for i, (column, _) in enumerate(items)
         )
 
