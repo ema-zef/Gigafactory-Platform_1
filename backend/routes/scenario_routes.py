@@ -2,9 +2,9 @@
 import json
 from decimal import Decimal
 from datetime import date, datetime, time
-from typing import Literal
+from typing import Annotated, Literal
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, StringConstraints, model_validator
 from sqlalchemy import text
 from auth import User, admin_only, current_user
 from database import engine
@@ -14,10 +14,46 @@ from simulation_access import inputs
 
 router = APIRouter(prefix='/scenarios', tags=['scenarios'])
 
+InterdependencyIdentifier = Annotated[
+    str, StringConstraints(strip_whitespace=True, min_length=1)
+]
+
+
+class InterdependencyRelationship(BaseModel):
+    source: InterdependencyIdentifier
+    target: InterdependencyIdentifier
+    direction: Literal['increase', 'decrease']
+
+    @model_validator(mode='after')
+    def validate_distinct_parameters(self):
+        if self.source == self.target:
+            raise ValueError(
+                'An interdependency relationship cannot reference itself'
+            )
+        return self
+
 class SaveScenario(BaseModel):
     scenario_name: str = Field(min_length=1, max_length=100)
     line_type: Literal['Gigafactory', 'Pilot Line']
     configuration: SimulationRequest
+
+    interdependency_relationships: list[InterdependencyRelationship] = Field(default_factory=list)
+
+    @model_validator(mode='after')
+    def validate_unique_relationships(self):
+        seen = set()
+
+        for relationship in self.interdependency_relationships:
+            pair = (relationship.source, relationship.target)
+
+            if pair in seen:
+                raise ValueError(
+                    'Duplicate interdependency source-target relationship'
+                )
+
+            seen.add(pair)
+
+        return self
 
 class BaselineSelection(BaseModel):
     line_type: Literal['Gigafactory', 'Pilot Line']
@@ -45,9 +81,34 @@ def save_scenario(payload: SaveScenario, user: User = Depends(current_user)):
     if throughput is None:
         raise HTTPException(500, 'Simulation result has no daily throughput')
     with engine.begin() as conn:
-        scenario_id = conn.execute(text('''INSERT INTO public.scenario(scenario_name,line_type,route_json,owner_id)
-          VALUES (:name,:line_type,CAST(:route AS jsonb),:owner) RETURNING scenario_id'''),
-          {'name': payload.scenario_name.strip(), 'line_type': payload.line_type, 'route': json_value({**configuration,'snapshot_version':2}), 'owner':user.id}).scalar_one()
+        scenario_id = conn.execute(
+            text('''INSERT INTO public.scenario(
+                scenario_name,
+                line_type,
+                route_json,
+                owner_id,
+                interdependency_relationships
+            )
+            VALUES (
+                :name,
+                :line_type,
+                CAST(:route AS jsonb),
+                :owner,
+                CAST(:relationships AS jsonb)
+            )
+            RETURNING scenario_id'''),
+            {
+                'name': payload.scenario_name.strip(),
+                'line_type': payload.line_type,
+                'route': json_value({**configuration, 'snapshot_version': 2}),
+                'owner': user.id,
+                'relationships': json_value([
+                    relationship.model_dump(mode='json')
+                    for relationship in payload.interdependency_relationships
+                ]),
+            }
+        ).scalar_one()
+
         ordinal = 0
         for branch in ('cathode_route','anode_route','assembly_route'):
             for step in configuration[branch]:
@@ -73,8 +134,8 @@ def list_scenarios(user: User = Depends(current_user)):
 @router.get('/{scenario_id}')
 def get_scenario(scenario_id: int, user: User = Depends(current_user)):
     with engine.connect() as conn:
-        row = conn.execute(text(f'''SELECT s.scenario_id,s.scenario_name,s.line_type,s.created_at,s.owner_id,s.route_json,
-          r.result_json,r.total_cost,r.total_energy,r.total_carbon,r.throughput,
+        row = conn.execute(text(f'''SELECT s.scenario_id,s.scenario_name,s.line_type,s.created_at,s.owner_id,s.route_json,s.interdependency_relationships,
+        r.result_json,r.total_cost,r.total_energy,r.total_carbon,r.throughput,
           (b.scenario_id IS NOT NULL) AS is_soa
           FROM public.scenario s LEFT JOIN public.scenario_result r ON r.scenario_id=s.scenario_id
           LEFT JOIN public.scenario_baseline b ON b.scenario_id=s.scenario_id
